@@ -1,32 +1,32 @@
 # SaServe - On-Demand Service Booking Android App
 
-**SaServe** is a modern Android application built with Kotlin and Jetpack Compose (Material 3) for booking home and vehicle service specialists (Electrician, Plumber, Carpenter, Mechanic, Appliance Repair, Painter).
+**SaServe** is a modern, customer-centric Android application built with Kotlin and Jetpack Compose (Material 3) for booking home and vehicle service specialists (Electrician, Plumber, Carpenter, Mechanic, Appliance Repair, Painter).
 
 ## ✨ Key Features
 
-1. **Dual-Role Architecture**:
-   - **Customer Mode**:
-     - Browse services by category (Electrician, Plumber, Carpenter, Mechanic, etc.).
-     - View verified providers sorted by **Ratings** (4.9 ★, 4.8 ★), distance, and hourly rates.
-     - Select appointment date and available time slots (Morning, Midday, Afternoon, Evening).
-     - Enter issue notes and service address to submit bookings.
-     - Live booking tracking with status badges (`PENDING`, `ACCEPTED`, `IN_PROGRESS`, `COMPLETED`).
-     - Real-time in-app notification center.
-   - **Service Provider Mode**:
-     - Register with trade category, hourly rate, and years of experience.
-     - Incoming requests feed showing client details, problem descriptions, and booked time slots.
-     - One-tap **Accept Booking** or **Decline** actions.
-     - Active job manager: advance status from `ACCEPTED` to `IN_PROGRESS` and `COMPLETED`.
-   - **Instant Role Switcher**:
-     - Built-in floating switcher allows toggling between Customer and Provider on a single device or emulator to test the entire lifecycle immediately!
+1. **Pure Customer-Centric Experience**:
+   - Clean, intuitive interface built exclusively for customers.
+   - Browse services by category (Electrician, Plumber, Carpenter, Mechanic, Appliance Repair, Painter).
+   - Dynamic catalog: Only service providers added by you are visible and bookable in the app!
+   - Real-time in-app notification center for all booking alerts.
 
-2. **Booking Acceptance Notifications**:
-   - When a provider taps **Accept Booking**, an Android system notification is posted to the status bar (utilizing `NotificationCompat.Builder` and high-priority channel).
-   - In-app notification badge and alert list update immediately.
+2. **Add & Manage Custom Service Providers**:
+   - Tap **`+ Add Pro`** anytime from the top bar or category screens.
+   - Enter provider name, trade category, contact phone/email, operating area, and hourly rate (in **₹ INR**).
+   - Only your added providers will populate the service catalog.
 
-3. **Pre-Seeded Data & Persistence**:
-   - Includes certified specialists for all categories with realistic ratings, reviews, and hourly rates.
-   - Local state persists across sessions.
+3. **Booking & Time Slot Selection**:
+   - Select appointment date and available time slots (Morning, Midday, Afternoon, Evening).
+   - Enter issue notes and service address to confirm booking.
+   - Live booking tracking with status badges (`PENDING`, `ACCEPTED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`).
+
+4. **Booking Acceptance Notifications**:
+   - High-priority Android `NotificationChannel` (`channel_service_bookings`).
+   - Android system push notifications (`NotificationCompat.Builder`) triggered upon booking confirmation/acceptance.
+   - Status updates automatically in the **Bookings** tab and **Alerts** badge.
+
+5. **Indian Rupee (₹ INR) Pricing**:
+   - All rates and price estimations are rendered in Indian Rupees (₹).
 
 ---
 
@@ -44,24 +44,22 @@
 
 ---
 
-## 🧪 Testing the Complete Booking & Notification Flow
+## 🧪 Testing Flow
 
-1. **Start as Customer**:
-   - Explore categories (e.g. tap **Plumber** or **Electrician**).
-   - Tap on **Marcus Vance (Plumber, 4.9 ★)** or **Alex Turner (Electrician, 4.9 ★)**.
+1. **Add your first Service Provider**:
+   - On the Home screen, tap **`+ Add Pro`** in the top bar.
+   - Fill in the provider details (e.g. *Ramesh Electrician*, *Category: Electrician*, *Rate: ₹399/hr*).
+   - Tap **Save & Add**.
+   - Your newly added specialist now appears under **Electricians** and on the home feed!
+
+2. **Book a Service Slot**:
+   - Tap on the specialist card.
    - Select a Date and Time Slot (e.g. `Tomorrow, Sep 6` at `11:00 AM - 01:00 PM`).
-   - Type an issue note (e.g. *"Sink pipe leaking under the cabinet"*) and hit **Confirm & Book Slot**.
-   - Your booking will now show status **PENDING**.
+   - Enter issue description (e.g. *"Switchboard sparking"*) and tap **Confirm & Book Slot**.
 
-2. **Switch to Provider Role**:
-   - Tap the **Switch** button on the bottom bar (or top header) and choose **Provider Mode (Marcus Vance)**.
-   - Tap on the **Requests** tab (or "New Customer Requests" on the dashboard).
-   - You will see the incoming request from the customer with the selected date, slot, and problem description.
-   - Tap the green **Accept Booking** button!
-
-3. **Verify the Notification**:
-   - A system push notification will fire on your Android status bar:
-     > *"🎉 Booking Accepted! Marcus Vance (Plumber) accepted your request for Tomorrow at 11:00 AM - 01:00 PM."*
-   - Switch back to **Customer Mode**:
-     - Check the **Alerts** tab: the new acceptance notification is listed.
-     - Check the **Bookings** tab: the status has updated from `Pending` to `ACCEPTED & SCHEDULED`!
+3. **Verify the Acceptance Notification**:
+   - Go to the **Bookings** tab.
+   - Under your pending booking, tap **`Simulate Acceptance`**.
+   - Watch the Android system push notification fire immediately on your device status bar:
+     > *"🎉 Booking Accepted by Ramesh Electrician! Service confirmed."*
+   - Status updates to **ACCEPTED & SCHEDULED**!

@@ -101,7 +101,7 @@ object NotificationHelper {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("EXTRA_BOOKING_ID", booking.id)
-            putExtra("EXTRA_NAV_TARGET", "provider_requests")
+            putExtra("EXTRA_NAV_TARGET", "customer_bookings")
         }
 
         val pendingIntent = PendingIntent.getActivity(

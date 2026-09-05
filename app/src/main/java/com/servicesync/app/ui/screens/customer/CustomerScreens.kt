@@ -1,13 +1,9 @@
 package com.servicesync.app.ui.screens.customer
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.servicesync.app.data.model.*
@@ -35,7 +32,7 @@ fun CustomerHomeScreen(
     onProviderSelected: (ServiceProvider) -> Unit,
     onBookProvider: (ServiceProvider) -> Unit,
     onOpenNotifications: () -> Unit,
-    onSwitchRoleClick: () -> Unit
+    onAddProviderClick: () -> Unit
 ) {
     val currentUser by repository.currentUser.collectAsState()
     val providers by repository.providers.collectAsState()
@@ -73,22 +70,22 @@ fun CustomerHomeScreen(
                 title = {
                     Column {
                         Text(
-                            text = "ServiceSync",
+                            text = "SaServe",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = PrimaryBlue
                         )
                         Text(
-                            text = "Hello, ${currentUser?.name?.split(" ")?.firstOrNull() ?: "Guest"} 👋",
+                            text = "Hello, ${currentUser?.name ?: "Customer"} 👋",
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary
                         )
                     }
                 },
                 actions = {
-                    // Role Switcher Button
+                    // Add Provider Button in Top Bar
                     FilledTonalButton(
-                        onClick = onSwitchRoleClick,
+                        onClick = onAddProviderClick,
                         shape = RoundedCornerShape(20.dp),
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                         colors = ButtonDefaults.filledTonalButtonColors(
@@ -97,12 +94,12 @@ fun CustomerHomeScreen(
                         )
                     ) {
                         Icon(
-                            imageVector = Icons.Default.SwapHoriz,
-                            contentDescription = "Switch Role",
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add Provider",
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Customer", style = MaterialTheme.typography.labelSmall)
+                        Text("+ Add Pro", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
 
                     // Notification Bell with Badge
@@ -136,7 +133,7 @@ fun CustomerHomeScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            // Active Bookings Alert Banner (if customer has active bookings)
+            // Active Bookings Alert Banner
             if (activeBookingsCount > 0) {
                 item {
                     val latestActive = bookings.firstOrNull {
@@ -232,7 +229,6 @@ fun CustomerHomeScreen(
                         )
                     }
 
-                    // 2-row category grid (or 3x2 grid)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -278,24 +274,26 @@ fun CustomerHomeScreen(
             }
 
             // Quick Filter Chips
-            item {
-                val filters = listOf("All", "Top Rated (4.9+)", "Budget (< ₹400)", "Available Now")
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(filters) { filter ->
-                        FilterChip(
-                            selected = selectedFilter == filter,
-                            onClick = { selectedFilter = filter },
-                            label = { Text(filter) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PrimaryBlue,
-                                selectedLabelColor = Color.White
+            if (providers.isNotEmpty()) {
+                item {
+                    val filters = listOf("All", "Top Rated (4.9+)", "Budget (< ₹400)", "Available Now")
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(filters) { filter ->
+                            FilterChip(
+                                selected = selectedFilter == filter,
+                                onClick = { selectedFilter = filter },
+                                label = { Text(filter) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = PrimaryBlue,
+                                    selectedLabelColor = Color.White
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
 
-            // Top-Rated Service Providers Header
+            // Available Service Providers Section Header
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -303,30 +301,84 @@ fun CustomerHomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Top-Rated Service Providers",
+                        text = "Your Service Providers",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
                     Text(
-                        text = "${filteredProviders.size} pros available",
+                        text = "${filteredProviders.size} added",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary
                     )
                 }
             }
 
-            // Providers List
-            if (filteredProviders.isEmpty()) {
+            // Providers List or Empty State
+            if (providers.isEmpty()) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(28.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(CircleShape)
+                                    .background(StatusAcceptedBg),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PersonAdd,
+                                    contentDescription = null,
+                                    tint = PrimaryBlue,
+                                    modifier = Modifier.size(34.dp)
+                                )
+                            }
+                            Text(
+                                text = "No Service Providers Added Yet",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = "Your service catalog is empty. Tap '+ Add Pro' to add electricians, plumbers, carpenters, or mechanics.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Button(
+                                onClick = onAddProviderClick,
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Add Service Provider", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            } else if (filteredProviders.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 32.dp),
+                            .padding(vertical = 24.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No service providers found matching filters.",
+                            text = "No providers match your filter criteria.",
                             color = TextSecondary,
                             style = MaterialTheme.typography.bodyMedium
                         )
@@ -398,10 +450,11 @@ fun ProviderListScreen(
     repository: ServiceSyncRepository,
     onBackClick: () -> Unit,
     onProviderSelected: (ServiceProvider) -> Unit,
-    onBookProvider: (ServiceProvider) -> Unit
+    onBookProvider: (ServiceProvider) -> Unit,
+    onAddProviderClick: (ServiceCategory) -> Unit
 ) {
     val providers by repository.providers.collectAsState()
-    var sortBy by remember { mutableStateOf("Rating") } // "Rating", "Experience", "Price"
+    var sortBy by remember { mutableStateOf("Rating") }
 
     val categoryProviders = remember(providers, category, sortBy) {
         val filtered = providers.filter { it.category == category }
@@ -424,7 +477,7 @@ fun ProviderListScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "${categoryProviders.size} verified specialists",
+                            text = "${categoryProviders.size} registered specialists",
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary
                         )
@@ -433,6 +486,21 @@ fun ProviderListScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    FilledTonalButton(
+                        onClick = { onAddProviderClick(category) },
+                        shape = RoundedCornerShape(20.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = StatusAcceptedBg,
+                            contentColor = PrimaryBlue
+                        )
+                    ) {
+                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Add", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundLight)
@@ -445,43 +513,100 @@ fun ProviderListScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Sort bar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Sort by:",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
-                )
-                listOf("Rating", "Experience", "Price").forEach { option ->
-                    FilterChip(
-                        selected = sortBy == option,
-                        onClick = { sortBy = option },
-                        label = { Text(option) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = PrimaryBlue,
-                            selectedLabelColor = Color.White
+            if (categoryProviders.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Sort by:",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextSecondary
+                    )
+                    listOf("Rating", "Experience", "Price").forEach { option ->
+                        FilterChip(
+                            selected = sortBy == option,
+                            onClick = { sortBy = option },
+                            label = { Text(option) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = PrimaryBlue,
+                                selectedLabelColor = Color.White
+                            )
                         )
-                    )
+                    }
                 }
-            }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                items(categoryProviders) { provider ->
-                    ProviderCard(
-                        provider = provider,
-                        onBookClick = { onBookProvider(provider) },
-                        onViewDetail = { onProviderSelected(provider) }
-                    )
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    items(categoryProviders) { provider ->
+                        ProviderCard(
+                            provider = provider,
+                            onBookClick = { onBookProvider(provider) },
+                            onViewDetail = { onProviderSelected(provider) }
+                        )
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceLight)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(28.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(60.dp)
+                                    .clip(CircleShape)
+                                    .background(StatusAcceptedBg),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = getCategoryIcon(category),
+                                    contentDescription = null,
+                                    tint = PrimaryBlue,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                            Text(
+                                text = "No ${category.displayName}s Added Yet",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "You haven't added any specialists for this service. Tap below to register one.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary,
+                                textAlign = TextAlign.Center
+                            )
+                            Button(
+                                onClick = { onAddProviderClick(category) },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                            ) {
+                                Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Add ${category.displayName}")
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -830,7 +955,7 @@ fun ProviderDetailScreen(
                             value = issueText,
                             onValueChange = { issueText = it },
                             label = { Text("Describe the Issue / Requirement") },
-                            placeholder = { Text("e.g. Kitchen pipe burst, circuit tripping...") },
+                            placeholder = { Text("e.g. Water leak under sink, need tap replacement...") },
                             leadingIcon = { Icon(Icons.Default.Description, null) },
                             modifier = Modifier.fillMaxWidth(),
                             minLines = 3,
@@ -919,7 +1044,7 @@ fun ProviderDetailScreen(
                     Text("• Slot: $selectedSlot")
                     Text("• Status: Pending Provider Acceptance")
                     Text(
-                        "You will receive a system notification the moment ${provider.name} accepts your request.",
+                        "You will receive an acceptance push notification when the request is confirmed.",
                         color = PrimaryBlue,
                         fontWeight = FontWeight.Medium
                     )
@@ -1027,7 +1152,15 @@ fun CustomerBookingsScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     items(filteredBookings) { booking ->
-                        BookingItemCard(booking = booking)
+                        BookingItemCard(
+                            booking = booking,
+                            onAcceptClick = {
+                                repository.acceptBooking(booking.id)
+                            },
+                            onCancelClick = {
+                                repository.cancelBooking(booking.id)
+                            }
+                        )
                     }
                 }
             }
@@ -1036,7 +1169,11 @@ fun CustomerBookingsScreen(
 }
 
 @Composable
-fun BookingItemCard(booking: Booking) {
+fun BookingItemCard(
+    booking: Booking,
+    onAcceptClick: () -> Unit,
+    onCancelClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -1090,7 +1227,7 @@ fun BookingItemCard(booking: Booking) {
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = "Provider accepted your request! Service is confirmed.",
+                            text = "Provider accepted your request! Service confirmed.",
                             style = MaterialTheme.typography.bodySmall,
                             color = StatusAccepted,
                             fontWeight = FontWeight.Medium
@@ -1157,6 +1294,35 @@ fun BookingItemCard(booking: Booking) {
                     style = MaterialTheme.typography.labelSmall,
                     color = TextMuted
                 )
+            }
+
+            // Quick Simulate Acceptance for testing notifications on device
+            if (booking.status == BookingStatus.PENDING) {
+                Divider(color = CardBorder)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = onCancelClick,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Cancel")
+                    }
+
+                    Button(
+                        onClick = onAcceptClick,
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = StatusAccepted),
+                        modifier = Modifier.weight(1.8f)
+                    ) {
+                        Icon(Icons.Default.NotificationsActive, null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Simulate Acceptance", fontSize = 12.sp)
+                    }
+                }
             }
         }
     }
