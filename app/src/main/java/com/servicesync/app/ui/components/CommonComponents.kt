@@ -145,7 +145,7 @@ fun CategoryCard(
                 Icon(
                     imageVector = getCategoryIcon(category),
                     contentDescription = category.displayName,
-                    tint = if (isSelected) Color.White else PrimaryBlue,
+                    tint = if (isSelected) Color(0xFF0A0C0E) else PrimaryBlue,
                     modifier = Modifier.size(26.dp)
                 )
             }
@@ -193,7 +193,7 @@ fun ProviderCard(
                 ) {
                     Text(
                         text = provider.name.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString(""),
-                        color = Color.White,
+                        color = Color(0xFF0A0C0E),
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )

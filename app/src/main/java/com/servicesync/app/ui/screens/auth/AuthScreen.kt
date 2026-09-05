@@ -67,7 +67,7 @@ fun AuthScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF0F1115))
+                    .background(BackgroundLight)
                     .padding(horizontal = 24.dp, vertical = 28.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -87,14 +87,14 @@ fun AuthScreen(
                     Text(
                         text = "Your Trusted Home Services Specialist",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.85f),
+                        color = TextSecondary,
                         fontWeight = FontWeight.Medium
                     )
 
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFF5B041).copy(alpha = 0.15f),
-                        border = BorderStroke(1.dp, Color(0xFFF5B041).copy(alpha = 0.4f)),
+                        color = PrimaryBlue.copy(alpha = 0.12f),
+                        border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.4f)),
                         modifier = Modifier.padding(top = 2.dp)
                     ) {
                         Row(
@@ -105,12 +105,12 @@ fun AuthScreen(
                             Icon(
                                 Icons.Default.Shield,
                                 contentDescription = null,
-                                tint = Color(0xFFF5B041),
+                                tint = PrimaryBlue,
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
                                 text = "Two-OTP Protected Services",
-                                color = Color(0xFFF5B041),
+                                color = PrimaryBlue,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold
                             )

@@ -106,10 +106,10 @@ fun CustomerHomeScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(PrimaryBlue)
+                        .background(Color(0xFF13171F))
                         .padding(horizontal = 20.dp, vertical = 24.dp)
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -118,13 +118,13 @@ fun CustomerHomeScreen(
                                 modifier = Modifier
                                     .size(48.dp)
                                     .clip(CircleShape)
-                                    .background(Color.White),
+                                    .background(PrimaryBlue),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Person,
                                     contentDescription = null,
-                                    tint = PrimaryBlue,
+                                    tint = Color(0xFF0A0C0E),
                                     modifier = Modifier.size(28.dp)
                                 )
                             }
@@ -134,12 +134,12 @@ fun CustomerHomeScreen(
                                     text = currentUser?.name?.ifBlank { "Customer" } ?: "Customer",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = TextPrimary
                                 )
                                 Text(
                                     text = currentUser?.phone?.ifBlank { "+91 Registered User" } ?: "+91 User",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.8f)
+                                    color = TextSecondary
                                 )
                             }
                         }
@@ -151,7 +151,8 @@ fun CustomerHomeScreen(
                                 onOpenWallet()
                             },
                             shape = RoundedCornerShape(10.dp),
-                            color = Color.White.copy(alpha = 0.15f),
+                            color = PrimaryBlue.copy(alpha = 0.12f),
+                            border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.3f)),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
@@ -166,20 +167,20 @@ fun CustomerHomeScreen(
                                     Icon(
                                         imageVector = Icons.Default.AccountBalanceWallet,
                                         contentDescription = null,
-                                        tint = Color.White,
+                                        tint = PrimaryBlue,
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Text(
                                         text = "SaServe Wallet",
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = Color.White
+                                        color = TextPrimary
                                     )
                                 }
                                 Text(
                                     text = "₹${walletBalance.toInt()}",
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = PrimaryBlue
                                 )
                             }
                         }
@@ -561,7 +562,8 @@ fun CustomerHomeScreen(
                     item {
                         Surface(
                             shape = RoundedCornerShape(16.dp),
-                            color = PrimaryBlue,
+                            color = SurfaceLight,
+                            border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.4f)),
                             modifier = Modifier.width(280.dp)
                         ) {
                             Column(
@@ -572,11 +574,11 @@ fun CustomerHomeScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    Icon(Icons.Default.Shield, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                                    Text("Two-OTP Security", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Icon(Icons.Default.Shield, null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                                    Text("Two-OTP Security", color = PrimaryBlue, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                 }
-                                Text("Urban Safety Protocol", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
-                                Text("Start & Completion OTPs ensure verified specialist and payment safety.", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelSmall)
+                                Text("Urban Safety Protocol", color = TextPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                                Text("Start & Completion OTPs ensure verified specialist and payment safety.", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     }
@@ -584,7 +586,8 @@ fun CustomerHomeScreen(
                     item {
                         Surface(
                             shape = RoundedCornerShape(16.dp),
-                            color = Color(0xFF0D9488), // Emerald Teal
+                            color = SurfaceLight,
+                            border = BorderStroke(1.dp, SecondaryTeal.copy(alpha = 0.4f)),
                             modifier = Modifier.width(280.dp)
                         ) {
                             Column(
@@ -595,11 +598,11 @@ fun CustomerHomeScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    Icon(Icons.Default.Bolt, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                                    Text("Express Dispatch", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Icon(Icons.Default.Bolt, null, tint = SecondaryTeal, modifier = Modifier.size(18.dp))
+                                    Text("Express Dispatch", color = SecondaryTeal, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                 }
-                                Text("Specialists at Your Doorstep", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
-                                Text("Quick response for electricians, plumbers, and home appliance repairs.", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelSmall)
+                                Text("Specialists at Your Doorstep", color = TextPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                                Text("Quick response for electricians, plumbers, and home appliance repairs.", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     }
@@ -607,7 +610,8 @@ fun CustomerHomeScreen(
                     item {
                         Surface(
                             shape = RoundedCornerShape(16.dp),
-                            color = Color(0xFF7C3AED), // Deep Violet
+                            color = SurfaceLight,
+                            border = BorderStroke(1.dp, StatusInProgress.copy(alpha = 0.4f)),
                             modifier = Modifier.width(280.dp)
                         ) {
                             Column(
@@ -618,11 +622,11 @@ fun CustomerHomeScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    Icon(Icons.Default.VerifiedUser, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                                    Text("Transparent INR Rates", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Icon(Icons.Default.VerifiedUser, null, tint = StatusInProgress, modifier = Modifier.size(18.dp))
+                                    Text("Transparent INR Rates", color = StatusInProgress, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                 }
-                                Text("Affordable ₹ Pricing", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
-                                Text("Clear hourly pricing in Indian Rupees with 100% verified specialists.", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelSmall)
+                                Text("Affordable ₹ Pricing", color = TextPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                                Text("Clear hourly pricing in Indian Rupees with 100% verified specialists.", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     }
@@ -706,7 +710,7 @@ fun CustomerHomeScreen(
                                 label = { Text(filter) },
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = PrimaryBlue,
-                                    selectedLabelColor = Color.White
+                                    selectedLabelColor = Color(0xFF0A0C0E)
                                 )
                             )
                         }
@@ -955,7 +959,7 @@ fun ProviderListScreen(
                             label = { Text(option) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = PrimaryBlue,
-                                selectedLabelColor = Color.White
+                                selectedLabelColor = Color(0xFF0A0C0E)
                             )
                         )
                     }
@@ -2031,7 +2035,8 @@ fun WalletScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = PrimaryBlue),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                    border = BorderStroke(1.5.dp, PrimaryBlue.copy(alpha = 0.5f)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(
@@ -2049,12 +2054,13 @@ fun WalletScreen(
                                 text = "AVAILABLE BALANCE",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color.White.copy(alpha = 0.8f),
+                                color = TextSecondary,
                                 letterSpacing = 1.sp
                             )
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = Color.White.copy(alpha = 0.2f)
+                                color = PrimaryBlue.copy(alpha = 0.15f),
+                                border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.3f))
                             ) {
                                 Row(
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -2064,13 +2070,13 @@ fun WalletScreen(
                                     Icon(
                                         imageVector = Icons.Default.Security,
                                         contentDescription = null,
-                                        tint = Color.White,
+                                        tint = PrimaryBlue,
                                         modifier = Modifier.size(14.dp)
                                     )
                                     Text(
                                         text = "UPI Verified",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White,
+                                        color = PrimaryBlue,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -2081,13 +2087,13 @@ fun WalletScreen(
                             text = "₹${String.format(java.util.Locale.US, "%,.2f", walletBalance)}",
                             style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
+                            color = PrimaryBlue
                         )
 
                         Text(
                             text = "Use wallet balance for instant booking confirmations with 0% extra gateway charges.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.85f)
+                            color = TextSecondary
                         )
                     }
                 }
@@ -2340,7 +2346,8 @@ fun HelpSupportScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = PrimaryBlue)
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                    border = BorderStroke(1.5.dp, PrimaryBlue.copy(alpha = 0.5f))
                 ) {
                     Column(
                         modifier = Modifier.padding(20.dp),
@@ -2350,13 +2357,13 @@ fun HelpSupportScreen(
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.2f)),
+                                .background(PrimaryBlue.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.SupportAgent,
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = PrimaryBlue,
                                 modifier = Modifier.size(28.dp)
                             )
                         }
@@ -2365,13 +2372,13 @@ fun HelpSupportScreen(
                             text = "How can we assist you today?",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = TextPrimary
                         )
 
                         Text(
                             text = "Our SaServe support team is ready to assist you with booking queries, service guarantee, OTP issues, or provider questions.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.85f)
+                            color = TextSecondary
                         )
                     }
                 }

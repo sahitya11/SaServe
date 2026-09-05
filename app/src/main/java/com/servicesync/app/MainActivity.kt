@@ -35,9 +35,7 @@ import com.servicesync.app.data.model.ServiceProvider
 import com.servicesync.app.data.repository.ServiceSyncRepository
 import com.servicesync.app.ui.screens.auth.AuthScreen
 import com.servicesync.app.ui.screens.customer.*
-import com.servicesync.app.ui.theme.BackgroundLight
-import com.servicesync.app.ui.theme.PrimaryBlue
-import com.servicesync.app.ui.theme.ServiceSyncTheme
+import com.servicesync.app.ui.theme.*
 import com.servicesync.app.ui.theme.StatusCancelled
 
 class MainActivity : ComponentActivity() {
@@ -287,7 +285,7 @@ fun SplashScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0F1115)), // Deep charcoal to match the crayon art aesthetic
+            .background(BackgroundLight),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -308,14 +306,14 @@ fun SplashScreen() {
             Text(
                 text = "Specialist Home Services at Your Doorstep",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.85f),
+                color = TextSecondary,
                 fontWeight = FontWeight.Medium
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             CircularProgressIndicator(
-                color = Color(0xFFF5B041), // Golden amber highlight matching crayon theme
+                color = PrimaryBlue, // Radiant Cyan Blue
                 strokeWidth = 3.dp,
                 modifier = Modifier.size(28.dp)
             )
