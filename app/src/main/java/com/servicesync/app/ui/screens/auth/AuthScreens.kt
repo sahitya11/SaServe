@@ -296,7 +296,7 @@ fun ProviderRegisterForm(
     var phone by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(ServiceCategory.ELECTRICIAN) }
     var categoryExpanded by remember { mutableStateOf(false) }
-    var hourlyRateStr by remember { mutableStateOf("45") }
+    var hourlyRateStr by remember { mutableStateOf("399") }
     var experienceStr by remember { mutableStateOf("5") }
     var bio by remember { mutableStateOf("") }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -383,8 +383,8 @@ fun ProviderRegisterForm(
                 OutlinedTextField(
                     value = hourlyRateStr,
                     onValueChange = { hourlyRateStr = it },
-                    label = { Text("Hourly Rate ($)") },
-                    leadingIcon = { Icon(Icons.Default.AttachMoney, null) },
+                    label = { Text("Hourly Rate (₹)") },
+                    leadingIcon = { Text("₹", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)

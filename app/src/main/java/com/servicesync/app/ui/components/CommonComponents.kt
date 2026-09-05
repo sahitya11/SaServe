@@ -284,7 +284,7 @@ fun ProviderCard(
                         color = TextMuted
                     )
                     Text(
-                        text = "$${provider.hourlyRate.toInt()}/hr",
+                        text = "₹${provider.hourlyRate.toInt()}/hr",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = PrimaryBlue

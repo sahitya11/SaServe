@@ -38,7 +38,15 @@ class ServiceSyncRepository(private val context: Context) {
         val savedProvidersJson = prefs.getString(KEY_PROVIDERS, null)
         if (!savedProvidersJson.isNullOrEmpty()) {
             val type = object : TypeToken<List<ServiceProvider>>() {}.type
-            _providers.value = gson.fromJson(savedProvidersJson, type)
+            val loaded: List<ServiceProvider> = gson.fromJson(savedProvidersJson, type)
+            // Migrate old USD rates to INR if detected
+            if (loaded.any { it.hourlyRate < 100.0 }) {
+                val initialProviders = getSeedProviders()
+                _providers.value = initialProviders
+                saveProviders(initialProviders)
+            } else {
+                _providers.value = loaded
+            }
         } else {
             val initialProviders = getSeedProviders()
             _providers.value = initialProviders
@@ -49,7 +57,14 @@ class ServiceSyncRepository(private val context: Context) {
         val savedBookingsJson = prefs.getString(KEY_BOOKINGS, null)
         if (!savedBookingsJson.isNullOrEmpty()) {
             val type = object : TypeToken<List<Booking>>() {}.type
-            _bookings.value = gson.fromJson(savedBookingsJson, type)
+            val loadedBookings: List<Booking> = gson.fromJson(savedBookingsJson, type)
+            if (loadedBookings.any { it.hourlyRate < 100.0 }) {
+                val initialBookings = getSeedBookings()
+                _bookings.value = initialBookings
+                saveBookings(initialBookings)
+            } else {
+                _bookings.value = loadedBookings
+            }
         } else {
             val initialBookings = getSeedBookings()
             _bookings.value = initialBookings
@@ -386,7 +401,7 @@ class ServiceSyncRepository(private val context: Context) {
                 rating = 4.95f,
                 reviewCount = 142,
                 experienceYears = 8,
-                hourlyRate = 48.0,
+                hourlyRate = 449.0,
                 bio = "Master certified electrician specializing in domestic wiring, smart switches, circuit breakers, and EV charger setup.",
                 location = "Downtown Metro (2.1 miles)",
                 distanceMiles = 2.1,
@@ -407,7 +422,7 @@ class ServiceSyncRepository(private val context: Context) {
                 rating = 4.88f,
                 reviewCount = 98,
                 experienceYears = 6,
-                hourlyRate = 42.0,
+                hourlyRate = 399.0,
                 bio = "Licensed residential electrician. Dedicated to fast diagnostic checks, safe switchboard installations, and home safety audits.",
                 location = "Oakridge Park (3.4 miles)",
                 distanceMiles = 3.4,
@@ -429,7 +444,7 @@ class ServiceSyncRepository(private val context: Context) {
                 rating = 4.92f,
                 reviewCount = 186,
                 experienceYears = 10,
-                hourlyRate = 52.0,
+                hourlyRate = 499.0,
                 bio = "Senior plumbing contractor with a decade of expertise in pipe leak detection, water heater servicing, bathroom remodeling, and unclogging.",
                 location = "Westfield Commons (1.5 miles)",
                 distanceMiles = 1.5,
@@ -450,7 +465,7 @@ class ServiceSyncRepository(private val context: Context) {
                 rating = 4.79f,
                 reviewCount = 84,
                 experienceYears = 5,
-                hourlyRate = 39.0,
+                hourlyRate = 349.0,
                 bio = "Reliable neighborhood plumber for kitchen sink fixtures, shower valves, and water filtration system installs.",
                 location = "Eastside Green (4.2 miles)",
                 distanceMiles = 4.2,
@@ -472,7 +487,7 @@ class ServiceSyncRepository(private val context: Context) {
                 rating = 4.91f,
                 reviewCount = 115,
                 experienceYears = 9,
-                hourlyRate = 49.0,
+                hourlyRate = 499.0,
                 bio = "Craftsman carpenter specialized in bespoke cabinetry, door alignment, furniture refurbishment, and timber decking.",
                 location = "Cedar Hills (2.8 miles)",
                 distanceMiles = 2.8,
@@ -492,7 +507,7 @@ class ServiceSyncRepository(private val context: Context) {
                 rating = 4.82f,
                 reviewCount = 73,
                 experienceYears = 6,
-                hourlyRate = 44.0,
+                hourlyRate = 399.0,
                 bio = "Precision carpentry: wooden partitions, floating shelves, modular wardrobes, and lock fitting.",
                 location = "Maple Ridge (3.7 miles)",
                 distanceMiles = 3.7,
@@ -514,7 +529,7 @@ class ServiceSyncRepository(private val context: Context) {
                 rating = 4.96f,
                 reviewCount = 210,
                 experienceYears = 12,
-                hourlyRate = 58.0,
+                hourlyRate = 599.0,
                 bio = "Certified mobile automotive specialist. On-site brake servicing, battery jump/replacement, OBD2 diagnostics, and tune-ups.",
                 location = "Industrial Way (1.9 miles)",
                 distanceMiles = 1.9,
@@ -534,7 +549,7 @@ class ServiceSyncRepository(private val context: Context) {
                 rating = 4.84f,
                 reviewCount = 92,
                 experienceYears = 7,
-                hourlyRate = 46.0,
+                hourlyRate = 449.0,
                 bio = "Mobile car mechanic for seasonal servicing, tire rotations, AC recharge, and engine health checks.",
                 location = "Bayside Boulevard (4.0 miles)",
                 distanceMiles = 4.0,
@@ -556,7 +571,7 @@ class ServiceSyncRepository(private val context: Context) {
                 rating = 4.90f,
                 reviewCount = 135,
                 experienceYears = 8,
-                hourlyRate = 45.0,
+                hourlyRate = 449.0,
                 bio = "Specialist in high-end refrigerators, washing machines, dishwashers, and microwave ovens.",
                 location = "South End (3.1 miles)",
                 distanceMiles = 3.1,
@@ -585,7 +600,7 @@ class ServiceSyncRepository(private val context: Context) {
                 scheduledSlot = "02:00 PM - 04:00 PM",
                 issueDescription = "Tripping circuit breaker when kitchen microwave and oven are on.",
                 status = BookingStatus.PENDING,
-                hourlyRate = 48.0
+                hourlyRate = 449.0
             ),
             Booking(
                 id = "bk_seed_102",
@@ -601,7 +616,7 @@ class ServiceSyncRepository(private val context: Context) {
                 scheduledSlot = "11:00 AM - 01:00 PM",
                 issueDescription = "Bathroom sink faucet leaking droplets continuously.",
                 status = BookingStatus.ACCEPTED,
-                hourlyRate = 52.0
+                hourlyRate = 499.0
             )
         )
     }

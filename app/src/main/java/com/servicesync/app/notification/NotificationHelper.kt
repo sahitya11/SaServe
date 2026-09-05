@@ -74,7 +74,7 @@ object NotificationHelper {
                                 "• Date: ${booking.scheduledDate}\n" +
                                 "• Slot: ${booking.scheduledSlot}\n" +
                                 "• Address: ${booking.customerAddress}\n" +
-                                "• Estimated Rate: $${booking.hourlyRate}/hr"
+                                "• Estimated Rate: ₹${booking.hourlyRate.toInt()}/hr"
                     )
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)

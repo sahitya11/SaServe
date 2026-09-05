@@ -61,7 +61,7 @@ fun CustomerHomeScreen(
         }
         when (selectedFilter) {
             "Top Rated (4.9+)" -> list.filter { it.rating >= 4.9f }
-            "Budget (< $45)" -> list.filter { it.hourlyRate < 45.0 }
+            "Budget (< ₹400)" -> list.filter { it.hourlyRate <= 400.0 }
             "Available Now" -> list.filter { it.isAvailable }
             else -> list
         }.sortedByDescending { it.rating }
@@ -279,7 +279,7 @@ fun CustomerHomeScreen(
 
             // Quick Filter Chips
             item {
-                val filters = listOf("All", "Top Rated (4.9+)", "Budget (< $45)", "Available Now")
+                val filters = listOf("All", "Top Rated (4.9+)", "Budget (< ₹400)", "Available Now")
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(filters) { filter ->
                         FilterChip(
@@ -544,7 +544,7 @@ fun ProviderDetailScreen(
                             color = TextSecondary
                         )
                         Text(
-                            text = "$${provider.hourlyRate.toInt()} / hr",
+                            text = "₹${provider.hourlyRate.toInt()} / hr",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = PrimaryBlue
@@ -1146,7 +1146,7 @@ fun BookingItemCard(booking: Booking) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Rate: $${booking.hourlyRate.toInt()}/hr",
+                    text = "Rate: ₹${booking.hourlyRate.toInt()}/hr",
                     style = MaterialTheme.typography.labelLarge,
                     color = PrimaryBlue,
                     fontWeight = FontWeight.Bold
