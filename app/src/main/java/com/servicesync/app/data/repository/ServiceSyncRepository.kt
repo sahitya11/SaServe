@@ -35,6 +35,12 @@ class ServiceSyncRepository(private val context: Context) {
     private val _dismissedHomeBookingIds = MutableStateFlow<Set<String>>(emptySet())
     val dismissedHomeBookingIds: StateFlow<Set<String>> = _dismissedHomeBookingIds.asStateFlow()
 
+    private val _walletBalance = MutableStateFlow<Double>(0.0)
+    val walletBalance: StateFlow<Double> = _walletBalance.asStateFlow()
+
+    private val _walletTransactions = MutableStateFlow<List<WalletTransaction>>(emptyList())
+    val walletTransactions: StateFlow<List<WalletTransaction>> = _walletTransactions.asStateFlow()
+
     init {
         loadOrInitializeData()
     }
@@ -125,6 +131,29 @@ class ServiceSyncRepository(private val context: Context) {
         val savedDismissed = prefs.getStringSet(KEY_DISMISSED_HOME_BOOKINGS, null)
         if (savedDismissed != null) {
             _dismissedHomeBookingIds.value = savedDismissed
+        }
+
+        // 6. Wallet Balance & Transactions
+        val savedBalance = prefs.getFloat(KEY_WALLET_BALANCE, 500.0f).toDouble()
+        _walletBalance.value = savedBalance
+
+        val savedTxJson = prefs.getString(KEY_WALLET_TRANSACTIONS, null)
+        if (!savedTxJson.isNullOrEmpty()) {
+            val type = object : TypeToken<List<WalletTransaction>>() {}.type
+            _walletTransactions.value = gson.fromJson(savedTxJson, type)
+        } else {
+            val initialTx = listOf(
+                WalletTransaction(
+                    id = "tx_welcome",
+                    amount = 500.0,
+                    type = "DEPOSIT",
+                    description = "Welcome Bonus Added to SaServe Wallet",
+                    timestamp = "Today",
+                    upiRefId = "UPI/WEL/98234"
+                )
+            )
+            _walletTransactions.value = initialTx
+            saveWallet(500.0, initialTx)
         }
     }
 
@@ -560,6 +589,50 @@ class ServiceSyncRepository(private val context: Context) {
         prefs.edit().putStringSet(KEY_DISMISSED_HOME_BOOKINGS, updated).apply()
     }
 
+    private fun saveWallet(balance: Double, txList: List<WalletTransaction>) {
+        prefs.edit()
+            .putFloat(KEY_WALLET_BALANCE, balance.toFloat())
+            .putString(KEY_WALLET_TRANSACTIONS, gson.toJson(txList))
+            .apply()
+    }
+
+    fun addMoneyToWallet(amount: Double, upiApp: String = "UPI", upiId: String = ""): Boolean {
+        if (amount <= 0) return false
+        val newBalance = _walletBalance.value + amount
+        val refNum = (100000..999999).random()
+        val newTx = WalletTransaction(
+            id = "tx_" + UUID.randomUUID().toString().take(8),
+            amount = amount,
+            type = "DEPOSIT",
+            description = "Deposit via $upiApp (${if (upiId.isNotBlank()) upiId else "Direct UPI"})",
+            timestamp = "Today",
+            upiRefId = "UPI/$refNum"
+        )
+        val updatedTx = listOf(newTx) + _walletTransactions.value
+        _walletBalance.value = newBalance
+        _walletTransactions.value = updatedTx
+        saveWallet(newBalance, updatedTx)
+        return true
+    }
+
+    fun deductWallet(amount: Double, description: String): Boolean {
+        if (amount <= 0 || _walletBalance.value < amount) return false
+        val newBalance = _walletBalance.value - amount
+        val newTx = WalletTransaction(
+            id = "tx_" + UUID.randomUUID().toString().take(8),
+            amount = amount,
+            type = "PAYMENT",
+            description = description.ifBlank { "Service Booking Payment" },
+            timestamp = "Today",
+            upiRefId = "PAY/${(100000..999999).random()}"
+        )
+        val updatedTx = listOf(newTx) + _walletTransactions.value
+        _walletBalance.value = newBalance
+        _walletTransactions.value = updatedTx
+        saveWallet(newBalance, updatedTx)
+        return true
+    }
+
     companion object {
         private const val KEY_CUSTOM_PROVIDERS = "key_custom_providers_only_v2"
         private const val KEY_CUSTOM_BOOKINGS = "key_custom_bookings_v2"
@@ -568,6 +641,8 @@ class ServiceSyncRepository(private val context: Context) {
         private const val KEY_REGISTERED_USERS = "key_registered_users_v2"
         private const val KEY_LOGGED_IN_PHONE = "key_logged_in_phone_v2"
         private const val KEY_DISMISSED_HOME_BOOKINGS = "key_dismissed_home_bookings_v1"
+        private const val KEY_WALLET_BALANCE = "key_wallet_balance_v1"
+        private const val KEY_WALLET_TRANSACTIONS = "key_wallet_transactions_v1"
 
         @Volatile
         private var INSTANCE: ServiceSyncRepository? = null

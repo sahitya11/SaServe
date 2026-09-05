@@ -129,3 +129,13 @@ data class AppNotification(
     val bookingId: String? = null,
     val isRead: Boolean = false
 )
+
+data class WalletTransaction(
+    val id: String = "",
+    val amount: Double = 0.0,
+    val type: String = "DEPOSIT", // "DEPOSIT" or "PAYMENT"
+    val description: String = "",
+    val timestamp: String = "",
+    val upiRefId: String = ""
+)
+

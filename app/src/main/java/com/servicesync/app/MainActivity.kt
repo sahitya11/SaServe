@@ -50,7 +50,10 @@ sealed class Screen {
     object CustomerBookings : Screen()
     object Notifications : Screen()
     data class BookingStatus(val booking: Booking) : Screen()
+    object Wallet : Screen()
+    object HelpSupport : Screen()
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,45 +121,6 @@ fun MainAppHost(initialNavTarget: String?) {
     val unreadNotifs = notifications.count { !it.isRead }
 
     Scaffold(
-        bottomBar = {
-            if (currentScreen !is Screen.Auth && currentScreen !is Screen.ProviderDetail && currentScreen !is Screen.ProviderList && currentScreen !is Screen.BookingStatus) {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 8.dp
-                ) {
-                    NavigationBarItem(
-                        selected = currentScreen is Screen.CustomerHome,
-                        onClick = { currentScreen = Screen.CustomerHome },
-                        icon = { Icon(Icons.Default.Home, contentDescription = "Services") },
-                        label = { Text("Services") }
-                    )
-                    NavigationBarItem(
-                        selected = currentScreen is Screen.CustomerBookings,
-                        onClick = { currentScreen = Screen.CustomerBookings },
-                        icon = { Icon(Icons.Default.CalendarToday, contentDescription = "Bookings") },
-                        label = { Text("Bookings") }
-                    )
-                    NavigationBarItem(
-                        selected = currentScreen is Screen.Notifications,
-                        onClick = { currentScreen = Screen.Notifications },
-                        icon = {
-                            BadgedBox(
-                                badge = {
-                                    if (unreadNotifs > 0) {
-                                        Badge(containerColor = StatusCancelled) {
-                                            Text("$unreadNotifs")
-                                        }
-                                    }
-                                }
-                            ) {
-                                Icon(Icons.Default.Notifications, contentDescription = "Alerts")
-                            }
-                        },
-                        label = { Text("Alerts") }
-                    )
-                }
-            }
-        },
         containerColor = BackgroundLight
     ) { innerPadding ->
         Box(
@@ -188,6 +152,15 @@ fun MainAppHost(initialNavTarget: String?) {
                         },
                         onOpenNotifications = {
                             currentScreen = Screen.Notifications
+                        },
+                        onOpenBookings = {
+                            currentScreen = Screen.CustomerBookings
+                        },
+                        onOpenWallet = {
+                            currentScreen = Screen.Wallet
+                        },
+                        onOpenHelp = {
+                            currentScreen = Screen.HelpSupport
                         },
                         onAddProviderClick = {
                             addProviderCategory = null
@@ -258,6 +231,19 @@ fun MainAppHost(initialNavTarget: String?) {
                         onNotificationClick = {
                             currentScreen = Screen.CustomerBookings
                         }
+                    )
+                }
+
+                is Screen.Wallet -> {
+                    WalletScreen(
+                        repository = repository,
+                        onBackClick = { currentScreen = Screen.CustomerHome }
+                    )
+                }
+
+                is Screen.HelpSupport -> {
+                    HelpSupportScreen(
+                        onBackClick = { currentScreen = Screen.CustomerHome }
                     )
                 }
             }

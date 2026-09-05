@@ -1,5 +1,9 @@
 package com.servicesync.app.ui.screens.customer
 
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -24,6 +29,8 @@ import com.servicesync.app.data.model.*
 import com.servicesync.app.data.repository.ServiceSyncRepository
 import com.servicesync.app.ui.components.*
 import com.servicesync.app.ui.theme.*
+import kotlinx.coroutines.launch
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,20 +40,31 @@ fun CustomerHomeScreen(
     onProviderSelected: (ServiceProvider) -> Unit,
     onBookProvider: (ServiceProvider) -> Unit,
     onOpenNotifications: () -> Unit,
+    onOpenBookings: () -> Unit,
+    onOpenWallet: () -> Unit,
+    onOpenHelp: () -> Unit,
     onAddProviderClick: () -> Unit,
     onLogoutClick: () -> Unit = {},
     onBookingSelected: (Booking) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+
     val currentUser by repository.currentUser.collectAsState()
     val providers by repository.providers.collectAsState()
     val notifications by repository.notifications.collectAsState()
     val bookings by repository.bookings.collectAsState()
+    val walletBalance by repository.walletBalance.collectAsState()
     val dismissedHomeIds by repository.dismissedHomeBookingIds.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") }
 
     val unreadNotifCount = notifications.count { !it.isRead }
+    val activeBookingsCount = bookings.count {
+        it.status == BookingStatus.PENDING || it.status == BookingStatus.ACCEPTED || it.status == BookingStatus.IN_PROGRESS
+    }
 
     // Active home booking: pending, accepted, in progress, or completed awaiting feedback (and not dismissed)
     val activeHomeBooking = bookings.firstOrNull { b ->
@@ -75,136 +93,374 @@ fun CustomerHomeScreen(
         }.sortedByDescending { it.rating }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        // SaServe Brand Logo Icon Badge
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(PrimaryBlue),
-                            contentAlignment = Alignment.Center
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                drawerContainerColor = SurfaceLight,
+                modifier = Modifier.width(310.dp)
+            ) {
+                // Drawer Header
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(PrimaryBlue)
+                        .padding(horizontal = 20.dp, vertical = 24.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Handyman,
-                                contentDescription = "SaServe Logo",
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Handyman,
+                                    contentDescription = null,
+                                    tint = PrimaryBlue,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+
+                            Column {
+                                Text(
+                                    text = currentUser?.name?.ifBlank { "Customer" } ?: "Customer",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = currentUser?.phone?.ifBlank { "+91 Registered User" } ?: "+91 User",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.8f)
+                                )
+                            }
                         }
 
-                        Column {
+                        // Wallet Mini-Card in Drawer Header
+                        Surface(
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                onOpenWallet()
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color.White.copy(alpha = 0.15f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AccountBalanceWallet,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        text = "SaServe Wallet",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = Color.White
+                                    )
+                                }
+                                Text(
+                                    text = "₹${walletBalance.toInt()}",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Navigation Items
+                NavigationDrawerItem(
+                    label = { Text("My Bookings", fontWeight = FontWeight.SemiBold) },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        onOpenBookings()
+                    },
+                    icon = { Icon(Icons.Default.CalendarToday, contentDescription = null, tint = PrimaryBlue) },
+                    badge = {
+                        if (activeBookingsCount > 0) {
+                            Surface(
+                                shape = CircleShape,
+                                color = StatusAcceptedBg
                             ) {
                                 Text(
-                                    text = "SaServe",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = PrimaryBlue,
-                                    letterSpacing = 0.5.sp
+                                    text = "$activeBookingsCount active",
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = StatusAccepted
                                 )
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = StatusAcceptedBg
+                            }
+                        }
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                )
+
+                NavigationDrawerItem(
+                    label = { Text("Payment & Wallet", fontWeight = FontWeight.SemiBold) },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        onOpenWallet()
+                    },
+                    icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = PrimaryBlue) },
+                    badge = {
+                        Text(
+                            text = "₹${walletBalance.toInt()}",
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryBlue,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                )
+
+                NavigationDrawerItem(
+                    label = { Text("Help & Support", fontWeight = FontWeight.SemiBold) },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        onOpenHelp()
+                    },
+                    icon = { Icon(Icons.Default.SupportAgent, contentDescription = null, tint = PrimaryBlue) },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                )
+
+                NavigationDrawerItem(
+                    label = { Text("Rate Us on Play Store", fontWeight = FontWeight.SemiBold) },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        val appPackage = context.packageName
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$appPackage")).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$appPackage")).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            context.startActivity(webIntent)
+                        }
+                    },
+                    icon = { Icon(Icons.Default.StarRate, contentDescription = null, tint = Color(0xFFFFA000)) },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                )
+
+                NavigationDrawerItem(
+                    label = { Text("Add Service Specialist", fontWeight = FontWeight.SemiBold) },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        onAddProviderClick()
+                    },
+                    icon = { Icon(Icons.Default.PersonAdd, contentDescription = null, tint = PrimaryBlue) },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp), color = CardBorder)
+
+                // Contact info footer preview
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 18.dp, vertical = 4.dp)
+                ) {
+                    Text("Direct Support Line", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                    Text("📞 7488274632", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = TextPrimary)
+                    Text("✉️ sahaditya1804@gmail.com", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                NavigationDrawerItem(
+                    label = { Text("Logout", color = StatusCancelled, fontWeight = FontWeight.Bold) },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        onLogoutClick()
+                    },
+                    icon = { Icon(Icons.Default.Logout, contentDescription = null, tint = StatusCancelled) },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)
+                )
+            }
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    navigationIcon = {
+                        // Top-left Navigation Menu Button (Hamburger)
+                        IconButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    if (drawerState.isClosed) drawerState.open() else drawerState.close()
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Open Navigation Menu",
+                                tint = TextPrimary,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                    },
+                    title = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // SaServe Brand Logo Icon Badge
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(9.dp))
+                                    .background(PrimaryBlue),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Handyman,
+                                    contentDescription = "SaServe Logo",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            Column {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     Text(
-                                        text = "PRO",
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
+                                        text = "SaServe",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.ExtraBold,
                                         color = PrimaryBlue,
-                                        fontSize = 9.sp
+                                        letterSpacing = 0.5.sp
+                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = StatusAcceptedBg
+                                    ) {
+                                        Text(
+                                            text = "PRO",
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = PrimaryBlue,
+                                            fontSize = 9.sp
+                                        )
+                                    }
+                                }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.LocationOn,
+                                        contentDescription = null,
+                                        tint = TextSecondary,
+                                        modifier = Modifier.size(11.dp)
+                                    )
+                                    Text(
+                                        text = currentUser?.address?.ifBlank { "Home Location" }?.take(18) ?: "Home Location",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = TextSecondary,
+                                        maxLines = 1
                                     )
                                 }
                             }
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(3.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.LocationOn,
-                                    contentDescription = null,
-                                    tint = TextSecondary,
-                                    modifier = Modifier.size(12.dp)
-                                )
-                                Text(
-                                    text = currentUser?.address?.ifBlank { "Home Location" }?.take(20) ?: "Home Location",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = TextSecondary,
-                                    maxLines = 1
-                                )
-                            }
                         }
-                    }
-                },
-                actions = {
-                    // Add Provider Button in Top Bar
-                    FilledTonalButton(
-                        onClick = onAddProviderClick,
-                        shape = RoundedCornerShape(20.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = StatusAcceptedBg,
-                            contentColor = PrimaryBlue
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add Provider",
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("+ Add Pro", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                    }
-
-                    // Notification Bell with Badge
-                    IconButton(onClick = onOpenNotifications) {
-                        BadgedBox(
-                            badge = {
-                                if (unreadNotifCount > 0) {
-                                    Badge(containerColor = StatusCancelled) {
-                                        Text("$unreadNotifCount")
-                                    }
-                                }
-                            }
+                    },
+                    actions = {
+                        // Add Provider Quick Button
+                        FilledTonalButton(
+                            onClick = onAddProviderClick,
+                            shape = RoundedCornerShape(18.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = StatusAcceptedBg,
+                                contentColor = PrimaryBlue
+                            )
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Notifications,
-                                contentDescription = "Notifications",
-                                tint = TextPrimary
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add Provider",
+                                modifier = Modifier.size(15.dp)
                             )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text("+ Pro", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                         }
-                    }
 
-                    // Logout Button
-                    IconButton(onClick = onLogoutClick) {
-                        Icon(
-                            imageVector = Icons.Default.Logout,
-                            contentDescription = "Logout",
-                            tint = TextSecondary
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundLight)
-            )
-        },
-        containerColor = BackgroundLight
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
-        ) {
+                        // Top-Right Ring-Shaped Notification Bell
+                        IconButton(
+                            onClick = onOpenNotifications,
+                            modifier = Modifier.padding(start = 2.dp, end = 4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(SurfaceLight)
+                                    .border(
+                                        width = 1.5.dp,
+                                        color = if (unreadNotifCount > 0) PrimaryBlue else CardBorder,
+                                        shape = CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.NotificationsNone,
+                                    contentDescription = "Notifications",
+                                    tint = if (unreadNotifCount > 0) PrimaryBlue else TextPrimary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+
+                                if (unreadNotifCount > 0) {
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(top = 4.dp, end = 4.dp)
+                                            .size(9.dp)
+                                            .clip(CircleShape)
+                                            .background(StatusCancelled)
+                                            .border(1.dp, Color.White, CircleShape)
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundLight)
+                )
+            },
+            containerColor = BackgroundLight
+        ) { padding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
             // Active / Recent Booking Notification Card (Dismissable via 'X' or once review submitted)
             if (activeHomeBooking != null) {
                 item {
@@ -574,6 +830,7 @@ fun CustomerHomeScreen(
             }
         }
     }
+}
 }
 
 @Composable
@@ -1693,3 +1950,674 @@ fun NotificationsScreen(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WalletScreen(
+    repository: ServiceSyncRepository,
+    onBackClick: () -> Unit
+) {
+    val context = LocalContext.current
+    val walletBalance by repository.walletBalance.collectAsState()
+    val transactions by repository.walletTransactions.collectAsState()
+
+    var customAmountText by remember { mutableStateOf("") }
+    var selectedUpiApp by remember { mutableStateOf("Google Pay") }
+    var upiIdInput by remember { mutableStateOf("") }
+    var showDepositDialog by remember { mutableStateOf(false) }
+    var showSuccessSnackbar by remember { mutableStateOf(false) }
+    var lastAddedAmount by remember { mutableStateOf(0.0) }
+
+    val quickAmounts = listOf(200, 500, 1000, 2000)
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("SaServe Wallet & UPI") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundLight)
+            )
+        },
+        containerColor = BackgroundLight
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Balance Card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = PrimaryBlue),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "AVAILABLE BALANCE",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White.copy(alpha = 0.8f),
+                                letterSpacing = 1.sp
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color.White.copy(alpha = 0.2f)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Security,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Text(
+                                        text = "UPI Verified",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+
+                        Text(
+                            text = "₹${String.format(java.util.Locale.US, "%,.2f", walletBalance)}",
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+
+                        Text(
+                            text = "Use wallet balance for instant booking confirmations with 0% extra gateway charges.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.85f)
+                        )
+                    }
+                }
+            }
+
+            // Quick Add Money Section
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Add Money to Wallet",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        // Quick Chips
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            quickAmounts.forEach { amt ->
+                                FilterChip(
+                                    selected = customAmountText == amt.toString(),
+                                    onClick = { customAmountText = amt.toString() },
+                                    label = { Text("+ ₹$amt", fontWeight = FontWeight.Bold) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = StatusAcceptedBg,
+                                        selectedLabelColor = PrimaryBlue
+                                    ),
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+
+                        // Custom Amount Field
+                        OutlinedTextField(
+                            value = customAmountText,
+                            onValueChange = { input ->
+                                if (input.all { it.isDigit() }) customAmountText = input
+                            },
+                            label = { Text("Enter Amount (₹)") },
+                            placeholder = { Text("e.g. 500") },
+                            leadingIcon = {
+                                Text("₹", fontWeight = FontWeight.Bold, color = PrimaryBlue, fontSize = 18.sp)
+                            },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        // UPI Provider Selector
+                        Text(
+                            text = "Pay via Preferred UPI App:",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = TextSecondary
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf("Google Pay", "PhonePe", "Paytm", "BHIM").forEach { appName ->
+                                FilterChip(
+                                    selected = selectedUpiApp == appName,
+                                    onClick = { selectedUpiApp = appName },
+                                    label = { Text(appName, fontSize = 11.sp) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = PrimaryBlue,
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
+                            }
+                        }
+
+                        // Optional UPI ID / VPA
+                        OutlinedTextField(
+                            value = upiIdInput,
+                            onValueChange = { upiIdInput = it },
+                            label = { Text("UPI ID (Optional, e.g. user@okaxis)") },
+                            placeholder = { Text("user@okhdfcbank") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        Button(
+                            onClick = {
+                                val amt = customAmountText.toDoubleOrNull() ?: 0.0
+                                if (amt > 0) {
+                                    repository.addMoneyToWallet(
+                                        amount = amt,
+                                        upiApp = selectedUpiApp,
+                                        upiId = upiIdInput
+                                    )
+                                    lastAddedAmount = amt
+                                    customAmountText = ""
+                                    upiIdInput = ""
+                                    showSuccessSnackbar = true
+                                    Toast.makeText(context, "₹${amt.toInt()} added to SaServe Wallet via $selectedUpiApp!", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "Please enter a valid amount", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
+                        ) {
+                            Icon(Icons.Default.Payment, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Proceed with $selectedUpiApp", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        }
+                    }
+                }
+            }
+
+            // Recent Transactions Header
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Transaction History",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${transactions.size} records",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                }
+            }
+
+            // Transactions List
+            if (transactions.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("No transactions yet.", color = TextSecondary)
+                    }
+                }
+            } else {
+                items(transactions) { tx ->
+                    val isDeposit = tx.type == "DEPOSIT"
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceLight)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(14.dp)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(if (isDeposit) StatusAcceptedBg else StatusCancelledBg),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isDeposit) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
+                                    contentDescription = null,
+                                    tint = if (isDeposit) StatusAccepted else StatusCancelled,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = tx.description,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = "Ref: ${tx.upiRefId} • ${tx.timestamp}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextMuted
+                                )
+                            }
+
+                            Text(
+                                text = "${if (isDeposit) "+" else "-"}₹${tx.amount.toInt()}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isDeposit) StatusAccepted else StatusCancelled
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HelpSupportScreen(
+    onBackClick: () -> Unit
+) {
+    val context = LocalContext.current
+    var contactQuerySubject by remember { mutableStateOf("") }
+    var contactQueryMessage by remember { mutableStateOf("") }
+
+    val supportPhone = "7488274632"
+    val supportEmail = "sahaditya1804@gmail.com"
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Help & Customer Support") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundLight)
+            )
+        },
+        containerColor = BackgroundLight
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Hero Help Banner
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = PrimaryBlue)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SupportAgent,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+
+                        Text(
+                            text = "How can we assist you today?",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+
+                        Text(
+                            text = "Our SaServe support team is ready to assist you with booking queries, service guarantee, OTP issues, or provider questions.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.85f)
+                        )
+                    }
+                }
+            }
+
+            // Direct Contact Cards (Call & Email)
+            item {
+                Text(
+                    text = "Direct Contact Options",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // Phone Contact Card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .background(StatusAcceptedBg),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Phone,
+                                contentDescription = null,
+                                tint = StatusAccepted,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Call Support Directly",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = supportPhone,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = PrimaryBlue,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "Available 8:00 AM - 10:00 PM (Daily)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextMuted
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$supportPhone")).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = StatusAccepted),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                        ) {
+                            Text("Call", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // Email Contact Card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .background(StatusAcceptedBg),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Email,
+                                contentDescription = null,
+                                tint = PrimaryBlue,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Email Support Team",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = supportEmail,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PrimaryBlue,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "Fast response within 2 hours",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextMuted
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                                    data = Uri.parse("mailto:$supportEmail")
+                                    putExtra(Intent.EXTRA_SUBJECT, "SaServe Customer Support Request")
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                try {
+                                    context.startActivity(emailIntent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Email: $supportEmail", Toast.LENGTH_LONG).show()
+                                }
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                        ) {
+                            Text("Email", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // Quick Query Form
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Send Message to SaServe Helpdesk",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        OutlinedTextField(
+                            value = contactQuerySubject,
+                            onValueChange = { contactQuerySubject = it },
+                            label = { Text("Subject / Issue Type") },
+                            placeholder = { Text("e.g. Booking rescheduled, OTP issue, payment query") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+
+                        OutlinedTextField(
+                            value = contactQueryMessage,
+                            onValueChange = { contactQueryMessage = it },
+                            label = { Text("Describe your query") },
+                            placeholder = { Text("Provide details so we can assist you quickly...") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+
+                        Button(
+                            onClick = {
+                                if (contactQueryMessage.isNotBlank()) {
+                                    val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                                        data = Uri.parse("mailto:$supportEmail")
+                                        putExtra(Intent.EXTRA_SUBJECT, contactQuerySubject.ifBlank { "Support Ticket from Customer" })
+                                        putExtra(Intent.EXTRA_TEXT, contactQueryMessage)
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    try {
+                                        context.startActivity(emailIntent)
+                                        contactQuerySubject = ""
+                                        contactQueryMessage = ""
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Please email: $supportEmail", Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    Toast.makeText(context, "Please write a message first", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Send Help Message", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // Frequently Asked Questions
+            item {
+                Text(
+                    text = "Frequently Asked Questions",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            val faqs = listOf(
+                "How do Two-Factor OTPs work?" to "When the service pro arrives, give them the Start OTP to begin the job. Once work is completed to your satisfaction, share the Completion OTP so the pro can finish the task.",
+                "How do I add money using UPI?" to "Open 'Payment & Wallet' from the menu, pick an amount or enter custom rupees, select your UPI app (Google Pay, PhonePe, Paytm, or BHIM), and proceed.",
+                "Can I cancel or reschedule a booking?" to "Yes, navigate to 'My Bookings' from the top-left menu and select your booking. Pending bookings can be canceled at any time free of charge.",
+                "What if the service specialist does not arrive?" to "Call our emergency helpline directly at 7488274632 or write to sahaditya1804@gmail.com. We will reassign a verified specialist immediately."
+            )
+
+            items(faqs) { (question, answer) ->
+                var expanded by remember { mutableStateOf(false) }
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { expanded = !expanded },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = question,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Icon(
+                                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                tint = PrimaryBlue
+                            )
+                        }
+                        if (expanded) {
+                            HorizontalDivider(color = CardBorder, modifier = Modifier.padding(vertical = 4.dp))
+                            Text(
+                                text = answer,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary,
+                                lineHeight = 18.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
