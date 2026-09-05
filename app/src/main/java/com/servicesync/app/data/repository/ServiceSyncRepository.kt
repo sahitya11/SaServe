@@ -211,6 +211,9 @@ class ServiceSyncRepository(private val context: Context) {
         issueDescription: String
     ): Booking {
         val user = _currentUser.value
+        val startOtp = ((1000..9999).random()).toString()
+        val completionOtp = ((1000..9999).random()).toString()
+
         val booking = Booking(
             id = "bk_" + UUID.randomUUID().toString().take(8),
             customerId = user?.id ?: "cust_user",
@@ -223,9 +226,11 @@ class ServiceSyncRepository(private val context: Context) {
             category = provider.category,
             scheduledDate = date,
             scheduledSlot = timeSlot,
-            issueDescription = issueDescription,
+            issueDescription = if (issueDescription.isNotBlank()) issueDescription else "General service and maintenance",
             status = BookingStatus.PENDING,
-            hourlyRate = provider.hourlyRate
+            hourlyRate = provider.hourlyRate,
+            startOtp = startOtp,
+            completionOtp = completionOtp
         )
 
         val updatedBookings = listOf(booking) + _bookings.value

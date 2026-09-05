@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.servicesync.app.data.model.Booking
 import com.servicesync.app.data.model.ServiceCategory
 import com.servicesync.app.data.model.ServiceProvider
 import com.servicesync.app.data.repository.ServiceSyncRepository
@@ -46,6 +47,7 @@ sealed class Screen {
     data class ProviderDetail(val provider: ServiceProvider) : Screen()
     object CustomerBookings : Screen()
     object Notifications : Screen()
+    data class BookingStatus(val booking: Booking) : Screen()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,7 +106,7 @@ fun MainAppHost(initialNavTarget: String?) {
 
     Scaffold(
         bottomBar = {
-            if (currentScreen !is Screen.ProviderDetail && currentScreen !is Screen.ProviderList) {
+            if (currentScreen !is Screen.ProviderDetail && currentScreen !is Screen.ProviderList && currentScreen !is Screen.BookingStatus) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
                     tonalElevation = 8.dp
@@ -195,8 +197,8 @@ fun MainAppHost(initialNavTarget: String?) {
                         provider = screen.provider,
                         repository = repository,
                         onBackClick = { currentScreen = Screen.CustomerHome },
-                        onBookingConfirmed = {
-                            currentScreen = Screen.CustomerBookings
+                        onBookingConfirmed = { booking ->
+                            currentScreen = Screen.BookingStatus(booking)
                         }
                     )
                 }
@@ -204,7 +206,19 @@ fun MainAppHost(initialNavTarget: String?) {
                 is Screen.CustomerBookings -> {
                     CustomerBookingsScreen(
                         repository = repository,
-                        onBackClick = { currentScreen = Screen.CustomerHome }
+                        onBackClick = { currentScreen = Screen.CustomerHome },
+                        onBookingClick = { booking ->
+                            currentScreen = Screen.BookingStatus(booking)
+                        }
+                    )
+                }
+
+                is Screen.BookingStatus -> {
+                    BookingStatusScreen(
+                        initialBooking = screen.booking,
+                        repository = repository,
+                        onBackToHome = { currentScreen = Screen.CustomerHome },
+                        onViewAllBookings = { currentScreen = Screen.CustomerBookings }
                     )
                 }
 

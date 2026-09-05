@@ -111,7 +111,9 @@ data class Booking(
     val status: BookingStatus,
     val createdAt: Long = System.currentTimeMillis(),
     val hourlyRate: Double,
-    val estimatedHours: Int = 1
+    val estimatedHours: Int = 1,
+    val startOtp: String = ((1000..9999).random()).toString(),
+    val completionOtp: String = ((1000..9999).random()).toString()
 ) {
     val totalAmount: Double get() = hourlyRate * estimatedHours
 }

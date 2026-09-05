@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -633,8 +634,6 @@ fun ProviderDetailScreen(
     var selectedSlot by remember { mutableStateOf(provider.availableSlots.firstOrNull()?.timeRange ?: "11:00 AM - 01:00 PM") }
     var issueText by remember { mutableStateOf("") }
     var addressText by remember { mutableStateOf(currentUser?.address ?: "") }
-    var showConfirmationDialog by remember { mutableStateOf(false) }
-    var createdBooking by remember { mutableStateOf<Booking?>(null) }
     var validationError by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
@@ -678,22 +677,14 @@ fun ProviderDetailScreen(
 
                     Button(
                         onClick = {
-                            if (issueText.isBlank()) {
-                                validationError = "Please describe the problem you need help with."
-                            } else if (addressText.isBlank()) {
-                                validationError = "Please specify the service address."
-                            } else {
-                                validationError = null
-                                val booking = repository.createBooking(
-                                    provider = provider,
-                                    date = selectedDate,
-                                    timeSlot = selectedSlot,
-                                    address = addressText,
-                                    issueDescription = issueText
-                                )
-                                createdBooking = booking
-                                showConfirmationDialog = true
-                            }
+                            val booking = repository.createBooking(
+                                provider = provider,
+                                date = selectedDate,
+                                timeSlot = selectedSlot,
+                                address = addressText.ifBlank { "Customer Location (Home)" },
+                                issueDescription = issueText.ifBlank { "General maintenance and inspection" }
+                            )
+                            onBookingConfirmed(booking)
                         },
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
@@ -1021,54 +1012,14 @@ fun ProviderDetailScreen(
             }
         }
     }
-
-    // Confirmation Modal
-    if (showConfirmationDialog && createdBooking != null) {
-        AlertDialog(
-            onDismissRequest = { showConfirmationDialog = false },
-            icon = {
-                Icon(
-                    Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = StatusCompleted,
-                    modifier = Modifier.size(48.dp)
-                )
-            },
-            title = {
-                Text("Booking Request Sent!")
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Your booking request has been dispatched to ${provider.name}.")
-                    Text("• Date: $selectedDate")
-                    Text("• Slot: $selectedSlot")
-                    Text("• Status: Pending Provider Acceptance")
-                    Text(
-                        "You will receive an acceptance push notification when the request is confirmed.",
-                        color = PrimaryBlue,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showConfirmationDialog = false
-                        createdBooking?.let { onBookingConfirmed(it) }
-                    }
-                ) {
-                    Text("View My Bookings")
-                }
-            }
-        )
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerBookingsScreen(
     repository: ServiceSyncRepository,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onBookingClick: (Booking) -> Unit = {}
 ) {
     val bookings by repository.bookings.collectAsState()
     var selectedFilter by remember { mutableStateOf("All") }
@@ -1154,6 +1105,7 @@ fun CustomerBookingsScreen(
                     items(filteredBookings) { booking ->
                         BookingItemCard(
                             booking = booking,
+                            onBookingClick = { onBookingClick(booking) },
                             onAcceptClick = {
                                 repository.acceptBooking(booking.id)
                             },
@@ -1171,11 +1123,14 @@ fun CustomerBookingsScreen(
 @Composable
 fun BookingItemCard(
     booking: Booking,
+    onBookingClick: () -> Unit = {},
     onAcceptClick: () -> Unit,
     onCancelClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onBookingClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceLight),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -1232,6 +1187,77 @@ fun BookingItemCard(
                             color = StatusAccepted,
                             fontWeight = FontWeight.Medium
                         )
+                    }
+                }
+            }
+
+            // UrbanClap Two-OTP Badge preview
+            if (booking.status != BookingStatus.CANCELLED) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = SurfaceVariantLight,
+                    border = BorderStroke(1.dp, CardBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "START OTP",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = PrimaryBlue,
+                                letterSpacing = 0.5.sp
+                            )
+                            Text(
+                                text = booking.startOtp,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = PrimaryBlue,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+
+                        Divider(
+                            modifier = Modifier
+                                .height(26.dp)
+                                .width(1.dp),
+                            color = CardBorder
+                        )
+
+                        Column {
+                            Text(
+                                text = "COMPLETION OTP",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = StatusCompleted,
+                                letterSpacing = 0.5.sp
+                            )
+                            Text(
+                                text = booking.completionOtp,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = StatusCompleted,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+
+                        Button(
+                            onClick = onBookingClick,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text("Track", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Icon(Icons.Default.ArrowForward, null, modifier = Modifier.size(14.dp))
+                        }
                     }
                 }
             }
