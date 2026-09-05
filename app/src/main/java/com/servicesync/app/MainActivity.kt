@@ -293,11 +293,11 @@ fun SplashScreen() {
             verticalArrangement = Arrangement.spacedBy(20.dp),
             modifier = Modifier.padding(24.dp)
         ) {
-            // Enhanced Crayon Logo Image (Seamlessly feathered into background)
+            // Original Official SaServe Logo (Transparent background)
             Image(
-                painter = painterResource(id = R.drawable.saserve_seamless_logo),
+                painter = painterResource(id = R.drawable.saserve_original_logo),
                 contentDescription = "SaServe Logo",
-                modifier = Modifier.fillMaxWidth(0.92f),
+                modifier = Modifier.fillMaxWidth(0.85f),
                 contentScale = ContentScale.Fit
             )
 
