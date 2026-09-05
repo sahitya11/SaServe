@@ -1,0 +1,1285 @@
+package com.servicesync.app.ui.screens.customer
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.servicesync.app.data.model.*
+import com.servicesync.app.data.repository.ServiceSyncRepository
+import com.servicesync.app.ui.components.*
+import com.servicesync.app.ui.theme.*
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomerHomeScreen(
+    repository: ServiceSyncRepository,
+    onCategorySelected: (ServiceCategory) -> Unit,
+    onProviderSelected: (ServiceProvider) -> Unit,
+    onBookProvider: (ServiceProvider) -> Unit,
+    onOpenNotifications: () -> Unit,
+    onSwitchRoleClick: () -> Unit
+) {
+    val currentUser by repository.currentUser.collectAsState()
+    val providers by repository.providers.collectAsState()
+    val notifications by repository.notifications.collectAsState()
+    val bookings by repository.bookings.collectAsState()
+
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedFilter by remember { mutableStateOf("All") }
+
+    val unreadNotifCount = notifications.count { !it.isRead }
+    val activeBookingsCount = bookings.count {
+        it.status == BookingStatus.PENDING || it.status == BookingStatus.ACCEPTED || it.status == BookingStatus.IN_PROGRESS
+    }
+
+    val filteredProviders = remember(providers, searchQuery, selectedFilter) {
+        var list = providers
+        if (searchQuery.isNotBlank()) {
+            list = list.filter {
+                it.name.contains(searchQuery, ignoreCase = true) ||
+                        it.category.displayName.contains(searchQuery, ignoreCase = true) ||
+                        it.skills.any { s -> s.contains(searchQuery, ignoreCase = true) }
+            }
+        }
+        when (selectedFilter) {
+            "Top Rated (4.9+)" -> list.filter { it.rating >= 4.9f }
+            "Budget (< $45)" -> list.filter { it.hourlyRate < 45.0 }
+            "Available Now" -> list.filter { it.isAvailable }
+            else -> list
+        }.sortedByDescending { it.rating }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            text = "ServiceSync",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryBlue
+                        )
+                        Text(
+                            text = "Hello, ${currentUser?.name?.split(" ")?.firstOrNull() ?: "Guest"} 👋",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                    }
+                },
+                actions = {
+                    // Role Switcher Button
+                    FilledTonalButton(
+                        onClick = onSwitchRoleClick,
+                        shape = RoundedCornerShape(20.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = StatusAcceptedBg,
+                            contentColor = PrimaryBlue
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SwapHoriz,
+                            contentDescription = "Switch Role",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Customer", style = MaterialTheme.typography.labelSmall)
+                    }
+
+                    // Notification Bell with Badge
+                    IconButton(onClick = onOpenNotifications) {
+                        BadgedBox(
+                            badge = {
+                                if (unreadNotifCount > 0) {
+                                    Badge(containerColor = StatusCancelled) {
+                                        Text("$unreadNotifCount")
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = "Notifications",
+                                tint = TextPrimary
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundLight)
+            )
+        },
+        containerColor = BackgroundLight
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
+        ) {
+            // Active Bookings Alert Banner (if customer has active bookings)
+            if (activeBookingsCount > 0) {
+                item {
+                    val latestActive = bookings.firstOrNull {
+                        it.status == BookingStatus.PENDING || it.status == BookingStatus.ACCEPTED
+                    }
+                    if (latestActive != null) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (latestActive.status == BookingStatus.ACCEPTED) StatusAcceptedBg else StatusPendingBg
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .padding(14.dp)
+                                    .fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (latestActive.status == BookingStatus.ACCEPTED) Icons.Default.CheckCircle else Icons.Default.Schedule,
+                                    contentDescription = null,
+                                    tint = if (latestActive.status == BookingStatus.ACCEPTED) StatusAccepted else StatusPending,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (latestActive.status == BookingStatus.ACCEPTED)
+                                            "🎉 ${latestActive.providerName} accepted your request!"
+                                        else "Request Pending: ${latestActive.category.displayName}",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (latestActive.status == BookingStatus.ACCEPTED) StatusAccepted else StatusPending
+                                    )
+                                    Text(
+                                        text = "${latestActive.scheduledDate} • ${latestActive.scheduledSlot}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = TextPrimary
+                                    )
+                                }
+                                StatusBadge(status = latestActive.status)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Search Bar
+            item {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Search electrician, plumber, mechanic...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextMuted) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear")
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = SurfaceLight,
+                        unfocusedContainerColor = SurfaceLight,
+                        focusedBorderColor = PrimaryBlue,
+                        unfocusedBorderColor = CardBorder
+                    ),
+                    singleLine = true
+                )
+            }
+
+            // Categories Section
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Explore Services",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        Text(
+                            text = "${ServiceCategory.values().size} categories",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                    }
+
+                    // 2-row category grid (or 3x2 grid)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        CategoryGridItem(
+                            category = ServiceCategory.ELECTRICIAN,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onCategorySelected(ServiceCategory.ELECTRICIAN) }
+                        )
+                        CategoryGridItem(
+                            category = ServiceCategory.PLUMBER,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onCategorySelected(ServiceCategory.PLUMBER) }
+                        )
+                        CategoryGridItem(
+                            category = ServiceCategory.CARPENTER,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onCategorySelected(ServiceCategory.CARPENTER) }
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        CategoryGridItem(
+                            category = ServiceCategory.MECHANIC,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onCategorySelected(ServiceCategory.MECHANIC) }
+                        )
+                        CategoryGridItem(
+                            category = ServiceCategory.APPLIANCE_REPAIR,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onCategorySelected(ServiceCategory.APPLIANCE_REPAIR) }
+                        )
+                        CategoryGridItem(
+                            category = ServiceCategory.PAINTER,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onCategorySelected(ServiceCategory.PAINTER) }
+                        )
+                    }
+                }
+            }
+
+            // Quick Filter Chips
+            item {
+                val filters = listOf("All", "Top Rated (4.9+)", "Budget (< $45)", "Available Now")
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(filters) { filter ->
+                        FilterChip(
+                            selected = selectedFilter == filter,
+                            onClick = { selectedFilter = filter },
+                            label = { Text(filter) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = PrimaryBlue,
+                                selectedLabelColor = Color.White
+                            )
+                        )
+                    }
+                }
+            }
+
+            // Top-Rated Service Providers Header
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Top-Rated Service Providers",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = "${filteredProviders.size} pros available",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                }
+            }
+
+            // Providers List
+            if (filteredProviders.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No service providers found matching filters.",
+                            color = TextSecondary,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            } else {
+                items(filteredProviders) { provider ->
+                    ProviderCard(
+                        provider = provider,
+                        onBookClick = { onBookProvider(provider) },
+                        onViewDetail = { onProviderSelected(provider) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CategoryGridItem(
+    category: ServiceCategory,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable { onClick() },
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(PrimaryBlue.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = getCategoryIcon(category),
+                    contentDescription = category.displayName,
+                    tint = PrimaryBlue,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Text(
+                text = category.displayName,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProviderListScreen(
+    category: ServiceCategory,
+    repository: ServiceSyncRepository,
+    onBackClick: () -> Unit,
+    onProviderSelected: (ServiceProvider) -> Unit,
+    onBookProvider: (ServiceProvider) -> Unit
+) {
+    val providers by repository.providers.collectAsState()
+    var sortBy by remember { mutableStateOf("Rating") } // "Rating", "Experience", "Price"
+
+    val categoryProviders = remember(providers, category, sortBy) {
+        val filtered = providers.filter { it.category == category }
+        when (sortBy) {
+            "Rating" -> filtered.sortedByDescending { it.rating }
+            "Experience" -> filtered.sortedByDescending { it.experienceYears }
+            "Price" -> filtered.sortedBy { it.hourlyRate }
+            else -> filtered
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            text = category.displayName + "s",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${categoryProviders.size} verified specialists",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundLight)
+            )
+        },
+        containerColor = BackgroundLight
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            // Sort bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Sort by:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary
+                )
+                listOf("Rating", "Experience", "Price").forEach { option ->
+                    FilterChip(
+                        selected = sortBy == option,
+                        onClick = { sortBy = option },
+                        label = { Text(option) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = PrimaryBlue,
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                }
+            }
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                items(categoryProviders) { provider ->
+                    ProviderCard(
+                        provider = provider,
+                        onBookClick = { onBookProvider(provider) },
+                        onViewDetail = { onProviderSelected(provider) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProviderDetailScreen(
+    provider: ServiceProvider,
+    repository: ServiceSyncRepository,
+    onBackClick: () -> Unit,
+    onBookingConfirmed: (Booking) -> Unit
+) {
+    val currentUser by repository.currentUser.collectAsState()
+
+    val availableDates = listOf(
+        "Today, Sep 5",
+        "Tomorrow, Sep 6",
+        "Sunday, Sep 7",
+        "Monday, Sep 8"
+    )
+    var selectedDate by remember { mutableStateOf(availableDates[1]) }
+    var selectedSlot by remember { mutableStateOf(provider.availableSlots.firstOrNull()?.timeRange ?: "11:00 AM - 01:00 PM") }
+    var issueText by remember { mutableStateOf("") }
+    var addressText by remember { mutableStateOf(currentUser?.address ?: "") }
+    var showConfirmationDialog by remember { mutableStateOf(false) }
+    var createdBooking by remember { mutableStateOf<Booking?>(null) }
+    var validationError by remember { mutableStateOf<String?>(null) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Provider Profile & Booking") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundLight)
+            )
+        },
+        bottomBar = {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shadowElevation = 8.dp,
+                color = SurfaceLight
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Estimated Cost",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                        Text(
+                            text = "$${provider.hourlyRate.toInt()} / hr",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryBlue
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            if (issueText.isBlank()) {
+                                validationError = "Please describe the problem you need help with."
+                            } else if (addressText.isBlank()) {
+                                validationError = "Please specify the service address."
+                            } else {
+                                validationError = null
+                                val booking = repository.createBooking(
+                                    provider = provider,
+                                    date = selectedDate,
+                                    timeSlot = selectedSlot,
+                                    address = addressText,
+                                    issueDescription = issueText
+                                )
+                                createdBooking = booking
+                                showConfirmationDialog = true
+                            }
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                        modifier = Modifier.height(48.dp)
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Confirm & Book Slot", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        },
+        containerColor = BackgroundLight
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
+        ) {
+            // Profile Card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(CircleShape)
+                                    .background(PrimaryBlue),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = provider.name.split(" ").mapNotNull { it.firstOrNull()?.toString() }.joinToString(""),
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 22.sp
+                                )
+                            }
+
+                            Column {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = provider.name,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    if (provider.isVerified) {
+                                        Icon(
+                                            Icons.Default.Verified,
+                                            contentDescription = "Verified",
+                                            tint = AccentSky,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = "${provider.category.displayName} • ${provider.experienceYears} Years Experience",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = TextSecondary
+                                )
+
+                                RatingDisplay(rating = provider.rating, reviewCount = provider.reviewCount)
+                            }
+                        }
+
+                        Divider(color = CardBorder)
+
+                        Text(
+                            text = "About",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = provider.bio,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+
+                        Text(
+                            text = "Specialties",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            provider.skills.forEach { skill ->
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = StatusAcceptedBg
+                                ) {
+                                    Text(
+                                        text = skill,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = PrimaryBlue,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Date Selection
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "1. Select Service Date",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            items(availableDates) { date ->
+                                val isSelected = selectedDate == date
+                                Surface(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable { selectedDate = date },
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (isSelected) PrimaryBlue else SurfaceVariantLight,
+                                    border = if (isSelected) null else BorderStroke(1.dp, CardBorder)
+                                ) {
+                                    Text(
+                                        text = date,
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) Color.White else TextPrimary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Time Slot Selection
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "2. Select Available Time Slot",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            provider.availableSlots.forEach { slot ->
+                                val isSelected = selectedSlot == slot.timeRange
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .clickable { selectedSlot = slot.timeRange },
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = if (isSelected) StatusAcceptedBg else SurfaceVariantLight,
+                                    border = if (isSelected) BorderStroke(1.5.dp, PrimaryBlue) else null
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.AccessTime,
+                                                contentDescription = null,
+                                                tint = if (isSelected) PrimaryBlue else TextSecondary,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Text(
+                                                text = slot.timeRange,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (isSelected) PrimaryBlue else TextPrimary
+                                            )
+                                        }
+
+                                        if (isSelected) {
+                                            Icon(
+                                                Icons.Default.CheckCircle,
+                                                contentDescription = "Selected",
+                                                tint = PrimaryBlue,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Booking Details Form
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "3. Job Details & Location",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        OutlinedTextField(
+                            value = addressText,
+                            onValueChange = { addressText = it },
+                            label = { Text("Service Location Address") },
+                            leadingIcon = { Icon(Icons.Default.LocationOn, null) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        OutlinedTextField(
+                            value = issueText,
+                            onValueChange = { issueText = it },
+                            label = { Text("Describe the Issue / Requirement") },
+                            placeholder = { Text("e.g. Kitchen pipe burst, circuit tripping...") },
+                            leadingIcon = { Icon(Icons.Default.Description, null) },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 3,
+                            maxLines = 4
+                        )
+
+                        if (validationError != null) {
+                            Text(
+                                text = validationError ?: "",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Customer Reviews Section
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = "Customer Reviews (${provider.reviews.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        provider.reviews.forEach { review ->
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = review.author,
+                                        fontWeight = FontWeight.SemiBold,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    RatingDisplay(rating = review.rating)
+                                }
+                                Text(
+                                    text = review.comment,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextSecondary
+                                )
+                                Text(
+                                    text = review.date,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextMuted
+                                )
+                                Divider(color = CardBorder, modifier = Modifier.padding(top = 6.dp))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Confirmation Modal
+    if (showConfirmationDialog && createdBooking != null) {
+        AlertDialog(
+            onDismissRequest = { showConfirmationDialog = false },
+            icon = {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = StatusCompleted,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text("Booking Request Sent!")
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Your booking request has been dispatched to ${provider.name}.")
+                    Text("• Date: $selectedDate")
+                    Text("• Slot: $selectedSlot")
+                    Text("• Status: Pending Provider Acceptance")
+                    Text(
+                        "You will receive a system notification the moment ${provider.name} accepts your request.",
+                        color = PrimaryBlue,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showConfirmationDialog = false
+                        createdBooking?.let { onBookingConfirmed(it) }
+                    }
+                ) {
+                    Text("View My Bookings")
+                }
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomerBookingsScreen(
+    repository: ServiceSyncRepository,
+    onBackClick: () -> Unit
+) {
+    val bookings by repository.bookings.collectAsState()
+    var selectedFilter by remember { mutableStateOf("All") }
+
+    val filteredBookings = remember(bookings, selectedFilter) {
+        when (selectedFilter) {
+            "Pending" -> bookings.filter { it.status == BookingStatus.PENDING }
+            "Accepted" -> bookings.filter { it.status == BookingStatus.ACCEPTED || it.status == BookingStatus.IN_PROGRESS }
+            "Completed" -> bookings.filter { it.status == BookingStatus.COMPLETED }
+            else -> bookings
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("My Service Bookings") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundLight)
+            )
+        },
+        containerColor = BackgroundLight
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            // Filter tabs
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf("All", "Pending", "Accepted", "Completed").forEach { statusLabel ->
+                    FilterChip(
+                        selected = selectedFilter == statusLabel,
+                        onClick = { selectedFilter = statusLabel },
+                        label = { Text(statusLabel) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = PrimaryBlue,
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                }
+            }
+
+            if (filteredBookings.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            tint = TextMuted,
+                            modifier = Modifier.size(54.dp)
+                        )
+                        Text(
+                            text = "No bookings found in this category.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    items(filteredBookings) { booking ->
+                        BookingItemCard(booking = booking)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BookingItemCard(booking: Booking) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = getCategoryIcon(booking.category),
+                        contentDescription = null,
+                        tint = PrimaryBlue,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = booking.providerName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                StatusBadge(status = booking.status)
+            }
+
+            // Notification note if Accepted
+            if (booking.status == BookingStatus.ACCEPTED) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = StatusAcceptedBg
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.NotificationsActive,
+                            contentDescription = null,
+                            tint = StatusAccepted,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Provider accepted your request! Service is confirmed.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = StatusAccepted,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            Divider(color = CardBorder)
+
+            // Booking details
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(Icons.Default.Event, null, tint = TextSecondary, modifier = Modifier.size(16.dp))
+                    Text(
+                        text = "${booking.scheduledDate} • ${booking.scheduledSlot}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(Icons.Default.LocationOn, null, tint = TextSecondary, modifier = Modifier.size(16.dp))
+                    Text(
+                        text = booking.customerAddress,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(Icons.Default.Description, null, tint = TextSecondary, modifier = Modifier.size(16.dp))
+                    Text(
+                        text = "Issue: ${booking.issueDescription}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Rate: $${booking.hourlyRate.toInt()}/hr",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = PrimaryBlue,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = "ID: #${booking.id.takeLast(5)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextMuted
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NotificationsScreen(
+    repository: ServiceSyncRepository,
+    onBackClick: () -> Unit,
+    onNotificationClick: (AppNotification) -> Unit
+) {
+    val notifications by repository.notifications.collectAsState()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Notifications") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (notifications.isNotEmpty()) {
+                        TextButton(onClick = { repository.clearAllNotifications() }) {
+                            Text("Clear All")
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundLight)
+            )
+        },
+        containerColor = BackgroundLight
+    ) { padding ->
+        if (notifications.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.NotificationsNone,
+                        contentDescription = null,
+                        tint = TextMuted,
+                        modifier = Modifier.size(54.dp)
+                    )
+                    Text("No notifications yet", color = TextSecondary)
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(notifications) { notif ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                repository.markNotificationRead(notif.id)
+                                onNotificationClick(notif)
+                            },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (!notif.isRead) StatusAcceptedBg.copy(alpha = 0.5f) else SurfaceLight
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(PrimaryBlue.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (notif.title.contains("Accepted")) Icons.Default.CheckCircle else Icons.Default.Notifications,
+                                    contentDescription = null,
+                                    tint = PrimaryBlue,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = notif.title,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = notif.message,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextSecondary
+                                )
+                            }
+
+                            if (!notif.isRead) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(PrimaryBlue)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
