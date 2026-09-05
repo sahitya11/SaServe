@@ -2666,6 +2666,7 @@ fun ManageAddressesScreen(
     val savedAddresses by repository.savedAddresses.collectAsState()
 
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingAddressId by remember { mutableStateOf<String?>(null) }
     var labelInput by remember { mutableStateOf("Home") }
     var addressInput by remember { mutableStateOf("") }
     var flatHouseInput by remember { mutableStateOf("") }
@@ -2699,15 +2700,27 @@ fun ManageAddressesScreen(
     }
 
     if (showAddDialog) {
+        val isEditing = editingAddressId != null
         AlertDialog(
-            onDismissRequest = { showAddDialog = false },
+            onDismissRequest = {
+                showAddDialog = false
+                editingAddressId = null
+            },
             title = {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.AddLocationAlt, contentDescription = null, tint = PrimaryBlue)
-                    Text("Add Precise Service Address", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Icon(
+                        if (isEditing) Icons.Default.EditLocationAlt else Icons.Default.AddLocationAlt,
+                        contentDescription = null,
+                        tint = PrimaryBlue
+                    )
+                    Text(
+                        if (isEditing) "Edit Service Address" else "Add Precise Service Address",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             },
             text = {
@@ -2827,34 +2840,52 @@ fun ManageAddressesScreen(
                     onClick = {
                         val baseLine = if (streetAreaInput.isNotBlank()) streetAreaInput else addressInput
                         if (baseLine.isNotBlank() || flatHouseInput.isNotBlank()) {
-                            repository.addSavedAddress(
-                                label = labelInput,
-                                addressLine = baseLine,
-                                flatHouseNo = flatHouseInput,
-                                streetArea = streetAreaInput,
-                                landmark = landmarkInput,
-                                reachInstructions = instructionsInput,
-                                isDefault = isDefaultInput
-                            )
+                            if (isEditing && editingAddressId != null) {
+                                repository.updateSavedAddress(
+                                    id = editingAddressId!!,
+                                    label = labelInput,
+                                    addressLine = baseLine,
+                                    flatHouseNo = flatHouseInput,
+                                    streetArea = streetAreaInput,
+                                    landmark = landmarkInput,
+                                    reachInstructions = instructionsInput,
+                                    isDefault = isDefaultInput
+                                )
+                                Toast.makeText(context, "Address updated successfully!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                repository.addSavedAddress(
+                                    label = labelInput,
+                                    addressLine = baseLine,
+                                    flatHouseNo = flatHouseInput,
+                                    streetArea = streetAreaInput,
+                                    landmark = landmarkInput,
+                                    reachInstructions = instructionsInput,
+                                    isDefault = isDefaultInput
+                                )
+                                Toast.makeText(context, "Precise address added successfully!", Toast.LENGTH_SHORT).show()
+                            }
                             showAddDialog = false
+                            editingAddressId = null
                             addressInput = ""
                             flatHouseInput = ""
                             streetAreaInput = ""
                             landmarkInput = ""
                             instructionsInput = ""
                             isDefaultInput = false
-                            Toast.makeText(context, "Precise address added successfully!", Toast.LENGTH_SHORT).show()
                         } else {
                             Toast.makeText(context, "Please enter at least house/flat or street details", Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                 ) {
-                    Text("Save Address")
+                    Text(if (isEditing) "Update Address" else "Save Address")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showAddDialog = false }) {
+                TextButton(onClick = {
+                    showAddDialog = false
+                    editingAddressId = null
+                }) {
                     Text("Cancel")
                 }
             }
@@ -2876,6 +2907,7 @@ fun ManageAddressesScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = {
+                    editingAddressId = null
                     labelInput = "Home"
                     addressInput = ""
                     flatHouseInput = ""
@@ -2931,7 +2963,17 @@ fun ManageAddressesScreen(
                         textAlign = TextAlign.Center
                     )
                     Button(
-                        onClick = { showAddDialog = true },
+                        onClick = {
+                            editingAddressId = null
+                            labelInput = "Home"
+                            addressInput = ""
+                            flatHouseInput = ""
+                            streetAreaInput = ""
+                            landmarkInput = ""
+                            instructionsInput = ""
+                            isDefaultInput = true
+                            showAddDialog = true
+                        },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                     ) {
@@ -3070,13 +3112,36 @@ fun ManageAddressesScreen(
                                     }
                                 }
 
-                                if (!addr.isDefault) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.padding(top = 4.dp)
+                                ) {
+                                    if (!addr.isDefault) {
+                                        TextButton(
+                                            onClick = { repository.setDefaultAddress(addr.id) },
+                                            contentPadding = PaddingValues(0.dp)
+                                        ) {
+                                            Text("Set as Default", fontSize = 12.sp, color = PrimaryBlue)
+                                        }
+                                    }
                                     TextButton(
-                                        onClick = { repository.setDefaultAddress(addr.id) },
-                                        contentPadding = PaddingValues(0.dp),
-                                        modifier = Modifier.padding(top = 4.dp)
+                                        onClick = {
+                                            editingAddressId = addr.id
+                                            labelInput = addr.label
+                                            flatHouseInput = addr.flatHouseNo
+                                            streetAreaInput = addr.streetArea
+                                            landmarkInput = addr.landmark
+                                            instructionsInput = addr.reachInstructions
+                                            addressInput = addr.addressLine
+                                            isDefaultInput = addr.isDefault
+                                            showAddDialog = true
+                                        },
+                                        contentPadding = PaddingValues(0.dp)
                                     ) {
-                                        Text("Set as Default", fontSize = 12.sp, color = PrimaryBlue)
+                                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp), tint = PrimaryBlue)
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Text("Edit", fontSize = 12.sp, color = PrimaryBlue, fontWeight = FontWeight.SemiBold)
                                     }
                                 }
                             }

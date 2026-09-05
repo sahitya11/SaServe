@@ -776,6 +776,71 @@ class ServiceSyncRepository(private val context: Context) {
         return true
     }
 
+    fun updateSavedAddress(
+        id: String,
+        label: String,
+        addressLine: String,
+        flatHouseNo: String = "",
+        streetArea: String = "",
+        landmark: String = "",
+        reachInstructions: String = "",
+        isDefault: Boolean = false
+    ): Boolean {
+        val cleanLabel = label.ifBlank { "Home" }
+        val fullLine = if (addressLine.isNotBlank()) addressLine.trim() else listOfNotNull(
+            flatHouseNo.takeIf { it.isNotBlank() },
+            streetArea.takeIf { it.isNotBlank() },
+            landmark.takeIf { it.isNotBlank() }?.let { "Near $it" }
+        ).joinToString(", ")
+
+        if (fullLine.isBlank() && flatHouseNo.isBlank() && streetArea.isBlank()) return false
+
+        val currentList = _savedAddresses.value
+        val index = currentList.indexOfFirst { it.id == id }
+        if (index == -1) return false
+
+        val wasDefault = currentList[index].isDefault
+        val shouldBeDefault = isDefault || wasDefault
+
+        val updatedItem = SavedAddress(
+            id = id,
+            label = cleanLabel,
+            addressLine = fullLine,
+            flatHouseNo = flatHouseNo.trim(),
+            streetArea = streetArea.trim(),
+            landmark = landmark.trim(),
+            reachInstructions = reachInstructions.trim(),
+            isDefault = shouldBeDefault
+        )
+
+        val updatedList = currentList.map { item ->
+            if (item.id == id) {
+                updatedItem
+            } else if (isDefault) {
+                item.copy(isDefault = false)
+            } else {
+                item
+            }
+        }
+        _savedAddresses.value = updatedList
+
+        // Persist on current user
+        _currentUser.value?.let { u ->
+            val defaultAddr = updatedList.firstOrNull { it.isDefault }?.formattedDisplayAddress
+                ?: updatedItem.formattedDisplayAddress
+            val updatedUser = u.copy(
+                address = if (shouldBeDefault) defaultAddr else u.address,
+                savedAddresses = updatedList
+            )
+            _currentUser.value = updatedUser
+            saveUser(updatedUser)
+
+            val registered = getRegisteredUsers().map { if (it.id == updatedUser.id) updatedUser else it }
+            saveRegisteredUsers(registered)
+        }
+        return true
+    }
+
     fun deleteSavedAddress(id: String) {
         val filtered = _savedAddresses.value.filter { it.id != id }
         val finalAddresses = if (filtered.none { it.isDefault } && filtered.isNotEmpty()) {
