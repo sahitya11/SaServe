@@ -76,11 +76,9 @@ fun AuthScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.saserve_crayon_logo),
+                        painter = painterResource(id = R.drawable.saserve_seamless_logo),
                         contentDescription = "SaServe Logo",
-                        modifier = Modifier
-                            .fillMaxWidth(0.78f)
-                            .clip(RoundedCornerShape(12.dp)),
+                        modifier = Modifier.fillMaxWidth(0.82f),
                         contentScale = ContentScale.Fit
                     )
 
