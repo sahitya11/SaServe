@@ -204,162 +204,426 @@ fun BookingStatusScreen(
             }
 
             // 2. URBANCLAP TWO-OTP SECURITY SECTION
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+            if (booking.status == BookingStatus.PENDING) {
+                // OTPs locked until specialist accepts
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(Icons.Default.Shield, contentDescription = null, tint = PrimaryBlue)
-                        Text(
-                            text = "Service Security PINs (OTPs)",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Default.Lock, contentDescription = null, tint = StatusPending)
+                            Text(
+                                text = "Security OTPs (Locked)",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
 
-                    Text(
-                        text = "For your safety, share each 4-digit code with your service provider only at the designated step.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
-                    )
-
-                    // OTP 1: Service Start OTP
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = BackgroundLight,
-                        border = BorderStroke(1.dp, CardBorder),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = StatusPendingBg,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(Icons.Default.PlayCircle, null, tint = StatusAccepted, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Default.HourglassTop,
+                                    contentDescription = null,
+                                    tint = StatusPending,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     Text(
-                                        text = "1. Start Service OTP",
+                                        text = "Awaiting Specialist Acceptance",
                                         fontWeight = FontWeight.Bold,
-                                        style = MaterialTheme.typography.titleSmall
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = StatusPending
                                     )
-                                }
-
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = StatusAcceptedBg
-                                ) {
                                     Text(
-                                        text = booking.startOtp,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                        fontFamily = FontFamily.Monospace,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = StatusAccepted,
-                                        letterSpacing = 2.sp
+                                        text = "Your Start and Completion OTPs will unlock immediately once ${booking.providerName} accepts your booking.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = TextSecondary
                                     )
-                                }
-                            }
-
-                            Text(
-                                text = "Share with the specialist when they arrive at your doorstep to verify identity and start work.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
-                            )
-
-                            if (booking.status == BookingStatus.ACCEPTED) {
-                                OutlinedButton(
-                                    onClick = {
-                                        showOtpDialogFor = "START"
-                                        otpInput = booking.startOtp
-                                        otpError = null
-                                    },
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("Verify Start OTP (Begin Service)")
                                 }
                             }
                         }
                     }
-
-                    // OTP 2: Service Completion OTP
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = BackgroundLight,
-                        border = BorderStroke(1.dp, CardBorder),
-                        modifier = Modifier.fillMaxWidth()
+                }
+            } else {
+                // OTPs UNLOCKED (status is ACCEPTED, IN_PROGRESS, or COMPLETED)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            Icon(Icons.Default.Shield, contentDescription = null, tint = PrimaryBlue)
+                            Text(
+                                text = "Service Security PINs (OTPs)",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Text(
+                            text = "Share each 4-digit code with your specialist only at the designated step.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+
+                        // OTP 1: Service Start OTP
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = BackgroundLight,
+                            border = BorderStroke(1.dp, CardBorder),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(Icons.Default.TaskAlt, null, tint = StatusCompleted, modifier = Modifier.size(18.dp))
-                                    Text(
-                                        text = "2. Completion OTP",
-                                        fontWeight = FontWeight.Bold,
-                                        style = MaterialTheme.typography.titleSmall
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.PlayCircle,
+                                            null,
+                                            tint = if (booking.status == BookingStatus.IN_PROGRESS || booking.status == BookingStatus.COMPLETED) StatusCompleted else StatusAccepted,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Text(
+                                            text = "1. Start Service OTP",
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.titleSmall
+                                        )
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (booking.status == BookingStatus.IN_PROGRESS || booking.status == BookingStatus.COMPLETED) StatusCompletedBg else StatusAcceptedBg
+                                    ) {
+                                        Text(
+                                            text = booking.startOtp,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = if (booking.status == BookingStatus.IN_PROGRESS || booking.status == BookingStatus.COMPLETED) StatusCompleted else StatusAccepted,
+                                            letterSpacing = 2.sp
+                                        )
+                                    }
                                 }
 
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = StatusCompletedBg
+                                Text(
+                                    text = if (booking.status == BookingStatus.IN_PROGRESS || booking.status == BookingStatus.COMPLETED)
+                                        "✓ Start OTP verified! Specialist has begun the work."
+                                    else
+                                        "Share with specialist when they arrive at your doorstep to start work.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (booking.status == BookingStatus.IN_PROGRESS || booking.status == BookingStatus.COMPLETED) StatusCompleted else TextSecondary
+                                )
+
+                                if (booking.status == BookingStatus.ACCEPTED) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            showOtpDialogFor = "START"
+                                            otpInput = booking.startOtp
+                                            otpError = null
+                                        },
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Icon(Icons.Default.VpnKey, null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("Enter Start OTP (Begin Service)")
+                                    }
+                                }
+                            }
+                        }
+
+                        // OTP 2: Service Completion OTP
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = BackgroundLight,
+                            border = BorderStroke(1.dp, CardBorder),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(Icons.Default.TaskAlt, null, tint = StatusCompleted, modifier = Modifier.size(18.dp))
+                                        Text(
+                                            text = "2. Completion OTP",
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.titleSmall
+                                        )
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = StatusCompletedBg
+                                    ) {
+                                        Text(
+                                            text = booking.completionOtp,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = StatusCompleted,
+                                            letterSpacing = 2.sp
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = if (booking.status == BookingStatus.COMPLETED)
+                                        "✓ Completion OTP verified! Booking successfully finalized."
+                                    else
+                                        "Share with specialist ONLY after the job is fully done and inspected to finalize.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (booking.status == BookingStatus.COMPLETED) StatusCompleted else TextSecondary
+                                )
+
+                                if (booking.status == BookingStatus.IN_PROGRESS || booking.status == BookingStatus.ACCEPTED) {
+                                    Button(
+                                        onClick = {
+                                            showOtpDialogFor = "COMPLETION"
+                                            otpInput = booking.completionOtp
+                                            otpError = null
+                                        },
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = StatusCompleted),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("Enter Completion OTP (Finish Job)", fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Celebratory Happy Message & Review Section when COMPLETED
+            if (booking.status == BookingStatus.COMPLETED) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = StatusCompletedBg),
+                    border = BorderStroke(1.dp, StatusCompleted.copy(alpha = 0.4f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(50.dp)
+                                .clip(CircleShape)
+                                .background(StatusCompleted),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                        }
+
+                        Text(
+                            text = "🎉 Service Completed Successfully!",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = StatusCompleted,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Text(
+                            text = "Thank you for choosing SaServe! We hope you had a wonderful experience with ${booking.providerName}. Your satisfaction is our top priority.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextPrimary,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                // Interactive Rating & Review Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFF59E0B))
+                            Text(
+                                text = "Rate & Review Specialist",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        if (booking.customerRating != null) {
+                            // Review already submitted
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = SurfaceVariantLight,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        repeat(5) { starIndex ->
+                                            Icon(
+                                                imageVector = Icons.Default.Star,
+                                                contentDescription = null,
+                                                tint = if (starIndex < (booking.customerRating ?: 5f).toInt()) Color(0xFFF59E0B) else TextMuted,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("${booking.customerRating?.toInt() ?: 5} / 5 Stars", fontWeight = FontWeight.Bold)
+                                    }
+                                    if (!booking.customerReview.isNullOrBlank()) {
+                                        Text(
+                                            text = "\"${booking.customerReview}\"",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                        )
+                                    }
                                     Text(
-                                        text = booking.completionOtp,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                        fontFamily = FontFamily.Monospace,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.ExtraBold,
+                                        text = "✓ Review saved to ${booking.providerName}'s profile. Thank you for your feedback!",
+                                        style = MaterialTheme.typography.labelSmall,
                                         color = StatusCompleted,
-                                        letterSpacing = 2.sp
+                                        fontWeight = FontWeight.Medium
                                     )
                                 }
                             }
+                        } else {
+                            var selectedRating by remember { mutableStateOf(5f) }
+                            var reviewText by remember { mutableStateOf("") }
+                            var reviewSubmitted by remember { mutableStateOf(false) }
 
-                            Text(
-                                text = "Share with the specialist ONLY after the job is fully done and inspected to finalize the booking.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
-                            )
-
-                            if (booking.status == BookingStatus.IN_PROGRESS || booking.status == BookingStatus.ACCEPTED) {
-                                Button(
-                                    onClick = {
-                                        showOtpDialogFor = "COMPLETION"
-                                        otpInput = booking.completionOtp
-                                        otpError = null
-                                    },
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = StatusCompleted),
+                            if (reviewSubmitted) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = StatusCompletedBg,
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text("Verify Completion OTP (Finish Job)", fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = "✓ Thank you for your review!",
+                                        color = StatusCompleted,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(14.dp)
+                                    )
+                                }
+                            } else {
+                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Text(
+                                        text = "How was your experience with ${booking.providerName}?",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = TextSecondary
+                                    )
+
+                                    // 5 Stars row
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        (1..5).forEach { star ->
+                                            IconButton(
+                                                onClick = { selectedRating = star.toFloat() },
+                                                modifier = Modifier.size(38.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Star,
+                                                    contentDescription = "$star Stars",
+                                                    tint = if (star <= selectedRating) Color(0xFFF59E0B) else TextMuted,
+                                                    modifier = Modifier.size(32.dp)
+                                                )
+                                            }
+                                        }
+                                        Text(
+                                            text = "${selectedRating.toInt()} / 5",
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFF59E0B),
+                                            modifier = Modifier.padding(start = 4.dp)
+                                        )
+                                    }
+
+                                    OutlinedTextField(
+                                        value = reviewText,
+                                        onValueChange = { reviewText = it },
+                                        label = { Text("Write your review") },
+                                        placeholder = { Text("e.g. Prompt arrival, polite specialist, problem resolved quickly!") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        minLines = 2,
+                                        maxLines = 3,
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+
+                                    Button(
+                                        onClick = {
+                                            repository.addReviewForBooking(
+                                                bookingId = booking.id,
+                                                rating = selectedRating,
+                                                comment = reviewText.ifBlank { "Great service by ${booking.providerName}!" }
+                                            )
+                                            reviewSubmitted = true
+                                        },
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Submit Specialist Review", fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                         }
@@ -512,17 +776,19 @@ fun BookingStatusScreen(
                         val expectedOtp = if (isStart) booking.startOtp else booking.completionOtp
                         if (otpInput.trim() == expectedOtp) {
                             if (isStart) {
-                                repository.acceptBooking(booking.id)
-                                // Move to in progress
-                                val updated = bookings.firstOrNull { it.id == booking.id }
-                                if (updated != null) {
-                                    // Set in progress
+                                val success = repository.startBookingWithOtp(booking.id, otpInput.trim())
+                                if (success) {
                                     showOtpDialogFor = null
+                                } else {
+                                    otpError = "Failed to start service."
                                 }
                             } else {
-                                // Complete booking
-                                repository.cancelBooking(booking.id) // Or complete
-                                showOtpDialogFor = null
+                                val success = repository.completeBookingWithOtp(booking.id, otpInput.trim())
+                                if (success) {
+                                    showOtpDialogFor = null
+                                } else {
+                                    otpError = "Failed to complete service."
+                                }
                             }
                         } else {
                             otpError = "Incorrect OTP code. Expected: $expectedOtp"

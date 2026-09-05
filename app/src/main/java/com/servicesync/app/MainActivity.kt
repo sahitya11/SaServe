@@ -21,6 +21,7 @@ import com.servicesync.app.data.model.Booking
 import com.servicesync.app.data.model.ServiceCategory
 import com.servicesync.app.data.model.ServiceProvider
 import com.servicesync.app.data.repository.ServiceSyncRepository
+import com.servicesync.app.ui.screens.auth.AuthScreen
 import com.servicesync.app.ui.screens.customer.*
 import com.servicesync.app.ui.theme.BackgroundLight
 import com.servicesync.app.ui.theme.ServiceSyncTheme
@@ -42,6 +43,7 @@ class MainActivity : ComponentActivity() {
 }
 
 sealed class Screen {
+    object Auth : Screen()
     object CustomerHome : Screen()
     data class ProviderList(val category: ServiceCategory) : Screen()
     data class ProviderDetail(val provider: ServiceProvider) : Screen()
@@ -56,14 +58,25 @@ fun MainAppHost(initialNavTarget: String?) {
     val context = LocalContext.current
     val repository = remember { ServiceSyncRepository.getInstance(context) }
     val notifications by repository.notifications.collectAsState()
+    val isLoggedIn by repository.isLoggedIn.collectAsState()
 
     var currentScreen by remember {
         mutableStateOf<Screen>(
-            when (initialNavTarget) {
-                "customer_bookings" -> Screen.CustomerBookings
-                else -> Screen.CustomerHome
+            if (!repository.isUserLoggedIn()) {
+                Screen.Auth
+            } else {
+                when (initialNavTarget) {
+                    "customer_bookings" -> Screen.CustomerBookings
+                    else -> Screen.CustomerHome
+                }
             }
         )
+    }
+
+    LaunchedEffect(isLoggedIn) {
+        if (!isLoggedIn && currentScreen !is Screen.Auth) {
+            currentScreen = Screen.Auth
+        }
     }
 
     var showAddProviderDialog by remember { mutableStateOf(false) }
@@ -106,7 +119,7 @@ fun MainAppHost(initialNavTarget: String?) {
 
     Scaffold(
         bottomBar = {
-            if (currentScreen !is Screen.ProviderDetail && currentScreen !is Screen.ProviderList && currentScreen !is Screen.BookingStatus) {
+            if (currentScreen !is Screen.Auth && currentScreen !is Screen.ProviderDetail && currentScreen !is Screen.ProviderList && currentScreen !is Screen.BookingStatus) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
                     tonalElevation = 8.dp
@@ -152,6 +165,15 @@ fun MainAppHost(initialNavTarget: String?) {
                 .padding(innerPadding)
         ) {
             when (val screen = currentScreen) {
+                is Screen.Auth -> {
+                    AuthScreen(
+                        repository = repository,
+                        onAuthSuccess = {
+                            currentScreen = Screen.CustomerHome
+                        }
+                    )
+                }
+
                 is Screen.CustomerHome -> {
                     CustomerHomeScreen(
                         repository = repository,
@@ -170,6 +192,10 @@ fun MainAppHost(initialNavTarget: String?) {
                         onAddProviderClick = {
                             addProviderCategory = null
                             showAddProviderDialog = true
+                        },
+                        onLogoutClick = {
+                            repository.logoutCustomer()
+                            currentScreen = Screen.Auth
                         }
                     )
                 }

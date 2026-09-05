@@ -20,6 +20,9 @@ class ServiceSyncRepository(private val context: Context) {
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
 
+    private val _isLoggedIn = MutableStateFlow<Boolean>(false)
+    val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
+
     private val _providers = MutableStateFlow<List<ServiceProvider>>(emptyList())
     val providers: StateFlow<List<ServiceProvider>> = _providers.asStateFlow()
 
@@ -77,21 +80,17 @@ class ServiceSyncRepository(private val context: Context) {
             saveNotifications(initialNotifs)
         }
 
-        // 4. Current User (Customer Only)
+        // 4. Current User (Customer Authentication)
         val savedUserJson = prefs.getString(KEY_CURRENT_USER, null)
-        if (!savedUserJson.isNullOrEmpty()) {
-            _currentUser.value = gson.fromJson(savedUserJson, User::class.java)
+        val loggedInPhone = prefs.getString(KEY_LOGGED_IN_PHONE, null)
+        if (!savedUserJson.isNullOrEmpty() && !loggedInPhone.isNullOrEmpty()) {
+            val user = gson.fromJson(savedUserJson, User::class.java)
+            _currentUser.value = user
+            _isLoggedIn.value = true
         } else {
-            val defaultCustomer = User(
-                id = "cust_user",
-                name = "Customer User",
-                email = "customer@saserve.com",
-                phone = "+91 98765 43210",
-                role = UserRole.CUSTOMER,
-                address = "Flat 402, Green Valley Apartments"
-            )
-            _currentUser.value = defaultCustomer
-            saveUser(defaultCustomer)
+            // First time or logged out: user must register/sign in with phone and password
+            _currentUser.value = null
+            _isLoggedIn.value = false
         }
     }
 
@@ -116,16 +115,121 @@ class ServiceSyncRepository(private val context: Context) {
     }
 
     fun updateCustomerProfile(name: String, phone: String, email: String, address: String) {
-        val updatedUser = User(
-            id = _currentUser.value?.id ?: "cust_user",
+        val updatedUser = (_currentUser.value ?: User(id = "cust_user", name = name, phone = phone)).copy(
             name = name,
             email = email,
             phone = phone,
-            role = UserRole.CUSTOMER,
             address = address
         )
         _currentUser.value = updatedUser
         saveUser(updatedUser)
+    }
+
+    fun isUserLoggedIn(): Boolean {
+        return _isLoggedIn.value
+    }
+
+    fun registerCustomer(phone: String, password: String, name: String, address: String): Boolean {
+        val cleanPhone = phone.trim()
+        val cleanPassword = password.trim()
+        if (cleanPhone.isBlank() || cleanPassword.isBlank()) return false
+
+        val newUser = User(
+            id = "cust_" + UUID.randomUUID().toString().take(8),
+            name = name.ifBlank { "Customer (${cleanPhone.takeLast(4)})" },
+            email = "",
+            phone = cleanPhone,
+            password = cleanPassword,
+            role = UserRole.CUSTOMER,
+            address = address.ifBlank { "Home Address" }
+        )
+
+        // Save into registered users list
+        val usersList = getRegisteredUsers().toMutableList()
+        val existingIndex = usersList.indexOfFirst {
+            it.phone.replace(Regex("[^0-9]"), "") == cleanPhone.replace(Regex("[^0-9]"), "")
+        }
+        if (existingIndex != -1) {
+            usersList[existingIndex] = newUser
+        } else {
+            usersList.add(newUser)
+        }
+        saveRegisteredUsers(usersList)
+
+        // Set as active logged-in user
+        _currentUser.value = newUser
+        _isLoggedIn.value = true
+        saveUser(newUser)
+        prefs.edit().putString(KEY_LOGGED_IN_PHONE, cleanPhone).apply()
+
+        // Welcome notification
+        val welcomeNotif = AppNotification(
+            id = UUID.randomUUID().toString(),
+            title = "Welcome to SaServe! 🎉",
+            message = "Hello ${newUser.name}! Your account is registered. Explore verified specialists and book with two-OTP security."
+        )
+        val updatedNotifs = listOf(welcomeNotif) + _notifications.value
+        _notifications.value = updatedNotifs
+        saveNotifications(updatedNotifs)
+
+        return true
+    }
+
+    fun loginCustomer(phone: String, password: String): Boolean {
+        val cleanPhone = phone.replace(Regex("[^0-9]"), "")
+        val cleanPassword = password.trim()
+        if (cleanPhone.isBlank() || cleanPassword.isBlank()) return false
+
+        val users = getRegisteredUsers()
+        val matchingUser = users.firstOrNull {
+            it.phone.replace(Regex("[^0-9]"), "") == cleanPhone && it.password == cleanPassword
+        }
+
+        if (matchingUser != null) {
+            _currentUser.value = matchingUser
+            _isLoggedIn.value = true
+            saveUser(matchingUser)
+            prefs.edit().putString(KEY_LOGGED_IN_PHONE, matchingUser.phone).apply()
+            return true
+        }
+
+        // Check if matches previous saved user
+        val savedUserJson = prefs.getString(KEY_CURRENT_USER, null)
+        if (!savedUserJson.isNullOrEmpty()) {
+            val savedUser = gson.fromJson(savedUserJson, User::class.java)
+            if (savedUser.phone.replace(Regex("[^0-9]"), "") == cleanPhone &&
+                (savedUser.password.isBlank() || savedUser.password == cleanPassword)
+            ) {
+                val updated = savedUser.copy(password = cleanPassword)
+                _currentUser.value = updated
+                _isLoggedIn.value = true
+                saveUser(updated)
+                prefs.edit().putString(KEY_LOGGED_IN_PHONE, updated.phone).apply()
+                return true
+            }
+        }
+
+        return false
+    }
+
+    fun logoutCustomer() {
+        _currentUser.value = null
+        _isLoggedIn.value = false
+        prefs.edit().remove(KEY_LOGGED_IN_PHONE).remove(KEY_CURRENT_USER).apply()
+    }
+
+    private fun getRegisteredUsers(): List<User> {
+        val json = prefs.getString(KEY_REGISTERED_USERS, null) ?: return emptyList()
+        val type = object : TypeToken<List<User>>() {}.type
+        return try {
+            gson.fromJson(json, type) ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun saveRegisteredUsers(users: List<User>) {
+        prefs.edit().putString(KEY_REGISTERED_USERS, gson.toJson(users)).apply()
     }
 
     /**
@@ -300,6 +404,109 @@ class ServiceSyncRepository(private val context: Context) {
         return true
     }
 
+    fun startBookingWithOtp(bookingId: String, otp: String): Boolean {
+        val currentList = _bookings.value
+        val targetIndex = currentList.indexOfFirst { it.id == bookingId }
+        if (targetIndex == -1) return false
+
+        val currentBooking = currentList[targetIndex]
+        if (currentBooking.startOtp != otp.trim()) return false
+
+        val updatedBooking = currentBooking.copy(status = BookingStatus.IN_PROGRESS)
+        val updatedList = currentList.toMutableList().apply {
+            set(targetIndex, updatedBooking)
+        }
+        _bookings.value = updatedList
+        saveBookings(updatedList)
+
+        // Notification: Service in progress
+        val notif = AppNotification(
+            id = UUID.randomUUID().toString(),
+            title = "Service Started 🛠️",
+            message = "${updatedBooking.providerName} has verified the Start OTP and begun the service.",
+            bookingId = updatedBooking.id
+        )
+        val updatedNotifs = listOf(notif) + _notifications.value
+        _notifications.value = updatedNotifs
+        saveNotifications(updatedNotifs)
+
+        return true
+    }
+
+    fun completeBookingWithOtp(bookingId: String, otp: String): Boolean {
+        val currentList = _bookings.value
+        val targetIndex = currentList.indexOfFirst { it.id == bookingId }
+        if (targetIndex == -1) return false
+
+        val currentBooking = currentList[targetIndex]
+        if (currentBooking.completionOtp != otp.trim()) return false
+
+        val updatedBooking = currentBooking.copy(status = BookingStatus.COMPLETED)
+        val updatedList = currentList.toMutableList().apply {
+            set(targetIndex, updatedBooking)
+        }
+        _bookings.value = updatedList
+        saveBookings(updatedList)
+
+        // Happy congratulatory notification
+        val notif = AppNotification(
+            id = UUID.randomUUID().toString(),
+            title = "🎉 Service Completed Successfully!",
+            message = "Your service with ${updatedBooking.providerName} is completed. Thank you for choosing SaServe! We'd love your review.",
+            bookingId = updatedBooking.id
+        )
+        val updatedNotifs = listOf(notif) + _notifications.value
+        _notifications.value = updatedNotifs
+        saveNotifications(updatedNotifs)
+
+        return true
+    }
+
+    fun addReviewForBooking(bookingId: String, rating: Float, comment: String): Boolean {
+        val currentList = _bookings.value
+        val targetIndex = currentList.indexOfFirst { it.id == bookingId }
+        if (targetIndex == -1) return false
+
+        val currentBooking = currentList[targetIndex]
+        val updatedBooking = currentBooking.copy(
+            customerRating = rating,
+            customerReview = comment
+        )
+        val updatedList = currentList.toMutableList().apply {
+            set(targetIndex, updatedBooking)
+        }
+        _bookings.value = updatedList
+        saveBookings(updatedList)
+
+        // Add review to provider
+        val currentProviders = _providers.value
+        val providerIndex = currentProviders.indexOfFirst { it.id == currentBooking.providerId }
+        if (providerIndex != -1) {
+            val provider = currentProviders[providerIndex]
+            val newReview = Review(
+                id = "rev_" + UUID.randomUUID().toString().take(6),
+                author = currentBooking.customerName.ifBlank { "Customer" },
+                rating = rating,
+                comment = comment.ifBlank { "Great service! Very satisfied." },
+                date = "Today"
+            )
+            val updatedReviews = listOf(newReview) + provider.reviews
+            val newAvgRating = updatedReviews.map { it.rating }.average().toFloat()
+            val updatedProvider = provider.copy(
+                reviews = updatedReviews,
+                reviewCount = updatedReviews.size,
+                rating = String.format(java.util.Locale.US, "%.1f", newAvgRating).toFloat()
+            )
+            val updatedProviderList = currentProviders.toMutableList().apply {
+                set(providerIndex, updatedProvider)
+            }
+            _providers.value = updatedProviderList
+            saveProviders(updatedProviderList)
+        }
+
+        return true
+    }
+
     fun markNotificationRead(id: String) {
         val updated = _notifications.value.map {
             if (it.id == id) it.copy(isRead = true) else it
@@ -318,6 +525,8 @@ class ServiceSyncRepository(private val context: Context) {
         private const val KEY_CUSTOM_BOOKINGS = "key_custom_bookings_v2"
         private const val KEY_NOTIFICATIONS = "key_notifications_list"
         private const val KEY_CURRENT_USER = "key_current_user"
+        private const val KEY_REGISTERED_USERS = "key_registered_users_v2"
+        private const val KEY_LOGGED_IN_PHONE = "key_logged_in_phone_v2"
 
         @Volatile
         private var INSTANCE: ServiceSyncRepository? = null

@@ -33,7 +33,8 @@ fun CustomerHomeScreen(
     onProviderSelected: (ServiceProvider) -> Unit,
     onBookProvider: (ServiceProvider) -> Unit,
     onOpenNotifications: () -> Unit,
-    onAddProviderClick: () -> Unit
+    onAddProviderClick: () -> Unit,
+    onLogoutClick: () -> Unit = {}
 ) {
     val currentUser by repository.currentUser.collectAsState()
     val providers by repository.providers.collectAsState()
@@ -70,14 +71,25 @@ fun CustomerHomeScreen(
             TopAppBar(
                 title = {
                     Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = PrimaryBlue,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = currentUser?.address?.ifBlank { "Current Location" } ?: "Current Location",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                        }
                         Text(
-                            text = "SaServe",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = PrimaryBlue
-                        )
-                        Text(
-                            text = "Hello, ${currentUser?.name ?: "Customer"} 👋",
+                            text = "Hi, ${currentUser?.name ?: "Customer"} 👋",
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary
                         )
@@ -120,6 +132,15 @@ fun CustomerHomeScreen(
                                 tint = TextPrimary
                             )
                         }
+                    }
+
+                    // Logout Button
+                    IconButton(onClick = onLogoutClick) {
+                        Icon(
+                            imageVector = Icons.Default.Logout,
+                            contentDescription = "Logout",
+                            tint = TextSecondary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundLight)
@@ -207,6 +228,83 @@ fun CustomerHomeScreen(
                     ),
                     singleLine = true
                 )
+            }
+
+            // Promotional Highlights & Security Carousel
+            item {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    item {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = PrimaryBlue,
+                            modifier = Modifier.width(280.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(Icons.Default.Shield, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                    Text("Two-OTP Security", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                }
+                                Text("Urban Safety Protocol", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                                Text("Start & Completion OTPs ensure verified specialist and payment safety.", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+
+                    item {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color(0xFF0D9488), // Emerald Teal
+                            modifier = Modifier.width(280.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(Icons.Default.Bolt, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                    Text("Express Dispatch", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                }
+                                Text("Specialists at Your Doorstep", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                                Text("Quick response for electricians, plumbers, and home appliance repairs.", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+
+                    item {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color(0xFF7C3AED), // Deep Violet
+                            modifier = Modifier.width(280.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(Icons.Default.VerifiedUser, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                    Text("Transparent INR Rates", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                }
+                                Text("Affordable ₹ Pricing", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                                Text("Clear hourly pricing in Indian Rupees with 100% verified specialists.", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                }
             }
 
             // Categories Section
@@ -1191,8 +1289,48 @@ fun BookingItemCard(
                 }
             }
 
-            // UrbanClap Two-OTP Badge preview
-            if (booking.status != BookingStatus.CANCELLED) {
+            // UrbanClap Two-OTP Badge preview (Locked when PENDING)
+            if (booking.status == BookingStatus.PENDING) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = StatusPendingBg,
+                    border = BorderStroke(1.dp, StatusPending.copy(alpha = 0.3f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(Icons.Default.Lock, null, tint = StatusPending, modifier = Modifier.size(16.dp))
+                            Text(
+                                text = "OTPs unlock after acceptance",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = StatusPending,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+
+                        Button(
+                            onClick = onBookingClick,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            Text("Track", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Icon(Icons.Default.ArrowForward, null, modifier = Modifier.size(14.dp))
+                        }
+                    }
+                }
+            } else if (booking.status != BookingStatus.CANCELLED) {
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = SurfaceVariantLight,

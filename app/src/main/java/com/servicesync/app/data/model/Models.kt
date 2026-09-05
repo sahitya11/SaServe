@@ -45,9 +45,10 @@ enum class ServiceCategory(
 data class User(
     val id: String,
     val name: String,
-    val email: String,
+    val email: String = "",
     val phone: String,
-    val role: UserRole,
+    val password: String = "",
+    val role: UserRole = UserRole.CUSTOMER,
     val address: String = "",
     val providerId: String? = null // Linked if role == PROVIDER
 )
@@ -113,7 +114,9 @@ data class Booking(
     val hourlyRate: Double,
     val estimatedHours: Int = 1,
     val startOtp: String = ((1000..9999).random()).toString(),
-    val completionOtp: String = ((1000..9999).random()).toString()
+    val completionOtp: String = ((1000..9999).random()).toString(),
+    val customerRating: Float? = null,
+    val customerReview: String? = null
 ) {
     val totalAmount: Double get() = hourlyRate * estimatedHours
 }
