@@ -121,19 +121,37 @@ class ServiceSyncRepository(private val context: Context) {
         val savedUserJson = prefs.getString(KEY_CURRENT_USER, null)
         val loggedInPhone = prefs.getString(KEY_LOGGED_IN_PHONE, null)
         if (!savedUserJson.isNullOrEmpty() && !loggedInPhone.isNullOrEmpty()) {
-            val user = gson.fromJson(savedUserJson, User::class.java)
-            _currentUser.value = user
-            _isLoggedIn.value = true
+            try {
+                val user = gson.fromJson(savedUserJson, User::class.java)
+                val sanitizedUser = if (user.savedAddresses == null) {
+                    val initialAddresses = if (user.address.isNotBlank()) {
+                        listOf(SavedAddress(id = "addr_default", label = "Home", addressLine = user.address, isDefault = true))
+                    } else {
+                        emptyList()
+                    }
+                    user.copy(savedAddresses = initialAddresses)
+                } else {
+                    user
+                }
 
-            // Load saved addresses
-            val initialAddresses = if (user.savedAddresses.isNotEmpty()) {
-                user.savedAddresses
-            } else if (user.address.isNotBlank()) {
-                listOf(SavedAddress(id = "addr_default", label = "Home", addressLine = user.address, isDefault = true))
-            } else {
-                emptyList()
+                _currentUser.value = sanitizedUser
+                _isLoggedIn.value = true
+
+                // Load saved addresses safely
+                val initialAddresses = if (sanitizedUser.safeSavedAddresses.isNotEmpty()) {
+                    sanitizedUser.safeSavedAddresses
+                } else if (sanitizedUser.address.isNotBlank()) {
+                    listOf(SavedAddress(id = "addr_default", label = "Home", addressLine = sanitizedUser.address, isDefault = true))
+                } else {
+                    emptyList()
+                }
+                _savedAddresses.value = initialAddresses
+                saveUser(sanitizedUser)
+            } catch (e: Exception) {
+                _currentUser.value = null
+                _isLoggedIn.value = false
+                _savedAddresses.value = emptyList()
             }
-            _savedAddresses.value = initialAddresses
         } else {
             // First time or logged out: user must register/sign in with phone and password
             _currentUser.value = null
@@ -271,10 +289,17 @@ class ServiceSyncRepository(private val context: Context) {
         }
 
         if (matchingUser != null) {
-            _currentUser.value = matchingUser
+            val sanitized = if (matchingUser.savedAddresses == null) {
+                matchingUser.copy(savedAddresses = if (matchingUser.address.isNotBlank()) {
+                    listOf(SavedAddress(id = "addr_default", label = "Home", addressLine = matchingUser.address, isDefault = true))
+                } else emptyList())
+            } else matchingUser
+
+            _currentUser.value = sanitized
+            _savedAddresses.value = sanitized.safeSavedAddresses
             _isLoggedIn.value = true
-            saveUser(matchingUser)
-            prefs.edit().putString(KEY_LOGGED_IN_PHONE, matchingUser.phone).apply()
+            saveUser(sanitized)
+            prefs.edit().putString(KEY_LOGGED_IN_PHONE, sanitized.phone).apply()
             return true
         }
 
@@ -285,8 +310,14 @@ class ServiceSyncRepository(private val context: Context) {
             if (savedUser.phone.replace(Regex("[^0-9]"), "") == cleanPhone &&
                 (savedUser.password.isBlank() || savedUser.password == cleanPassword)
             ) {
-                val updated = savedUser.copy(password = cleanPassword)
+                val updated = savedUser.copy(
+                    password = cleanPassword,
+                    savedAddresses = savedUser.savedAddresses ?: if (savedUser.address.isNotBlank()) {
+                        listOf(SavedAddress(id = "addr_default", label = "Home", addressLine = savedUser.address, isDefault = true))
+                    } else emptyList()
+                )
                 _currentUser.value = updated
+                _savedAddresses.value = updated.safeSavedAddresses
                 _isLoggedIn.value = true
                 saveUser(updated)
                 prefs.edit().putString(KEY_LOGGED_IN_PHONE, updated.phone).apply()
@@ -307,7 +338,15 @@ class ServiceSyncRepository(private val context: Context) {
         val json = prefs.getString(KEY_REGISTERED_USERS, null) ?: return emptyList()
         val type = object : TypeToken<List<User>>() {}.type
         return try {
-            gson.fromJson(json, type) ?: emptyList()
+            val list: List<User> = gson.fromJson(json, type) ?: emptyList()
+            list.map { u ->
+                if (u.savedAddresses == null) {
+                    val fallback = if (u.address.isNotBlank()) {
+                        listOf(SavedAddress(id = "addr_default", label = "Home", addressLine = u.address, isDefault = true))
+                    } else emptyList()
+                    u.copy(savedAddresses = fallback)
+                } else u
+            }
         } catch (e: Exception) {
             emptyList()
         }

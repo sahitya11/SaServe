@@ -50,16 +50,19 @@ data class SavedAddress(
 )
 
 data class User(
-    val id: String,
-    val name: String,
+    val id: String = "",
+    val name: String = "",
     val email: String = "",
-    val phone: String,
+    val phone: String = "",
     val password: String = "",
     val role: UserRole = UserRole.CUSTOMER,
     val address: String = "",
-    val savedAddresses: List<SavedAddress> = emptyList(),
+    val savedAddresses: List<SavedAddress>? = emptyList(),
     val providerId: String? = null // Linked if role == PROVIDER
-)
+) {
+    val safeSavedAddresses: List<SavedAddress>
+        get() = savedAddresses ?: emptyList()
+}
 
 
 data class TimeSlot(
