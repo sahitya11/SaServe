@@ -1,6 +1,8 @@
 package com.servicesync.app.ui.screens.auth
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -17,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -24,6 +28,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.servicesync.app.R
 import com.servicesync.app.data.repository.ServiceSyncRepository
 import com.servicesync.app.ui.theme.*
 
@@ -58,68 +63,56 @@ fun AuthScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header with SaServe Branding
+            // Header with SaServe Crayon Branding
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(PrimaryBlue)
-                    .padding(horizontal = 24.dp, vertical = 36.dp),
+                    .background(Color(0xFF0F1115))
+                    .padding(horizontal = 24.dp, vertical = 28.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Box(
+                    Image(
+                        painter = painterResource(id = R.drawable.saserve_crayon_logo),
+                        contentDescription = "SaServe Logo",
                         modifier = Modifier
-                            .size(68.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Handyman,
-                            contentDescription = "SaServe Logo",
-                            tint = Color.White,
-                            modifier = Modifier.size(38.dp)
-                        )
-                    }
-
-                    Text(
-                        text = "SaServe",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
-                        letterSpacing = 1.sp
+                            .fillMaxWidth(0.78f)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Fit
                     )
 
                     Text(
                         text = "Your Trusted Home Services Specialist",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.85f)
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontWeight = FontWeight.Medium
                     )
 
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = Color.White.copy(alpha = 0.2f),
-                        modifier = Modifier.padding(top = 4.dp)
+                        color = Color(0xFFF5B041).copy(alpha = 0.15f),
+                        border = BorderStroke(1.dp, Color(0xFFF5B041).copy(alpha = 0.4f)),
+                        modifier = Modifier.padding(top = 2.dp)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Icon(
                                 Icons.Default.Shield,
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = Color(0xFFF5B041),
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
                                 text = "Two-OTP Protected Services",
-                                color = Color.White,
+                                color = Color(0xFFF5B041),
                                 style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
