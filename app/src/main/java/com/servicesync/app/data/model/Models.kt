@@ -97,21 +97,21 @@ enum class BookingStatus(val label: String) {
 }
 
 data class Booking(
-    val id: String,
-    val customerId: String,
-    val customerName: String,
-    val customerPhone: String,
-    val customerAddress: String,
-    val providerId: String,
-    val providerName: String,
-    val providerPhone: String,
-    val category: ServiceCategory,
-    val scheduledDate: String, // e.g., "Tomorrow, Sep 6"
-    val scheduledSlot: String, // e.g., "11:00 AM - 01:00 PM"
-    val issueDescription: String,
-    val status: BookingStatus,
+    val id: String = "",
+    val customerId: String = "",
+    val customerName: String = "",
+    val customerPhone: String = "",
+    val customerAddress: String = "",
+    val providerId: String = "",
+    val providerName: String = "",
+    val providerPhone: String = "",
+    val category: ServiceCategory = ServiceCategory.ELECTRICIAN,
+    val scheduledDate: String = "", // e.g., "Tomorrow, Sep 6"
+    val scheduledSlot: String = "", // e.g., "11:00 AM - 01:00 PM"
+    val issueDescription: String = "",
+    val status: BookingStatus = BookingStatus.PENDING,
     val createdAt: Long = System.currentTimeMillis(),
-    val hourlyRate: Double,
+    val hourlyRate: Double = 0.0,
     val estimatedHours: Int = 1,
     val startOtp: String = ((1000..9999).random()).toString(),
     val completionOtp: String = ((1000..9999).random()).toString(),

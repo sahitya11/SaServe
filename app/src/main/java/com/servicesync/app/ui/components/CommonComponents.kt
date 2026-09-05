@@ -58,10 +58,11 @@ fun RatingDisplay(
 
 @Composable
 fun StatusBadge(
-    status: BookingStatus,
+    status: BookingStatus?,
     modifier: Modifier = Modifier
 ) {
-    val (bgColor, textColor, icon) = when (status) {
+    val safeStatus = status ?: BookingStatus.PENDING
+    val (bgColor, textColor, icon) = when (safeStatus) {
         BookingStatus.PENDING -> Triple(StatusPendingBg, StatusPending, Icons.Default.HourglassEmpty)
         BookingStatus.ACCEPTED -> Triple(StatusAcceptedBg, StatusAccepted, Icons.Default.CheckCircle)
         BookingStatus.IN_PROGRESS -> Triple(StatusInProgressBg, StatusInProgress, Icons.Default.Handyman)
@@ -86,7 +87,7 @@ fun StatusBadge(
                 modifier = Modifier.size(13.dp)
             )
             Text(
-                text = status.label,
+                text = safeStatus.label,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = textColor
@@ -95,7 +96,7 @@ fun StatusBadge(
     }
 }
 
-fun getCategoryIcon(category: ServiceCategory): ImageVector {
+fun getCategoryIcon(category: ServiceCategory?): ImageVector {
     return when (category) {
         ServiceCategory.ELECTRICIAN -> Icons.Default.Bolt
         ServiceCategory.PLUMBER -> Icons.Default.WaterDrop
@@ -103,6 +104,7 @@ fun getCategoryIcon(category: ServiceCategory): ImageVector {
         ServiceCategory.MECHANIC -> Icons.Default.Build
         ServiceCategory.APPLIANCE_REPAIR -> Icons.Default.HomeRepairService
         ServiceCategory.PAINTER -> Icons.Default.FormatPaint
+        null -> Icons.Default.Handyman
     }
 }
 

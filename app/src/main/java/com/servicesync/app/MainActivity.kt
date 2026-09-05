@@ -196,6 +196,9 @@ fun MainAppHost(initialNavTarget: String?) {
                         onLogoutClick = {
                             repository.logoutCustomer()
                             currentScreen = Screen.Auth
+                        },
+                        onBookingSelected = { booking ->
+                            currentScreen = Screen.BookingStatus(booking)
                         }
                     )
                 }

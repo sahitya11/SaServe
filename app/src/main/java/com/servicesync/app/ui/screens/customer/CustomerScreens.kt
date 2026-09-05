@@ -34,19 +34,28 @@ fun CustomerHomeScreen(
     onBookProvider: (ServiceProvider) -> Unit,
     onOpenNotifications: () -> Unit,
     onAddProviderClick: () -> Unit,
-    onLogoutClick: () -> Unit = {}
+    onLogoutClick: () -> Unit = {},
+    onBookingSelected: (Booking) -> Unit = {}
 ) {
     val currentUser by repository.currentUser.collectAsState()
     val providers by repository.providers.collectAsState()
     val notifications by repository.notifications.collectAsState()
     val bookings by repository.bookings.collectAsState()
+    val dismissedHomeIds by repository.dismissedHomeBookingIds.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") }
 
     val unreadNotifCount = notifications.count { !it.isRead }
-    val activeBookingsCount = bookings.count {
-        it.status == BookingStatus.PENDING || it.status == BookingStatus.ACCEPTED || it.status == BookingStatus.IN_PROGRESS
+
+    // Active home booking: pending, accepted, in progress, or completed awaiting feedback (and not dismissed)
+    val activeHomeBooking = bookings.firstOrNull { b ->
+        b.id !in dismissedHomeIds && (
+            b.status == BookingStatus.PENDING ||
+            b.status == BookingStatus.ACCEPTED ||
+            b.status == BookingStatus.IN_PROGRESS ||
+            (b.status == BookingStatus.COMPLETED && b.customerRating == null)
+        )
     }
 
     val filteredProviders = remember(providers, searchQuery, selectedFilter) {
@@ -70,29 +79,70 @@ fun CustomerHomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        // SaServe Brand Logo Icon Badge
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(PrimaryBlue),
+                            contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                Icons.Default.LocationOn,
-                                contentDescription = null,
-                                tint = PrimaryBlue,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = currentUser?.address?.ifBlank { "Current Location" } ?: "Current Location",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1
+                                imageVector = Icons.Default.Handyman,
+                                contentDescription = "SaServe Logo",
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
-                        Text(
-                            text = "Hi, ${currentUser?.name ?: "Customer"} 👋",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
-                        )
+
+                        Column {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "SaServe",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = PrimaryBlue,
+                                    letterSpacing = 0.5.sp
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = StatusAcceptedBg
+                                ) {
+                                    Text(
+                                        text = "PRO",
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = PrimaryBlue,
+                                        fontSize = 9.sp
+                                    )
+                                }
+                            }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    tint = TextSecondary,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Text(
+                                    text = currentUser?.address?.ifBlank { "Home Location" }?.take(20) ?: "Home Location",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextSecondary,
+                                    maxLines = 1
+                                )
+                            }
+                        }
                     }
                 },
                 actions = {
@@ -155,49 +205,79 @@ fun CustomerHomeScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            // Active Bookings Alert Banner
-            if (activeBookingsCount > 0) {
+            // Active / Recent Booking Notification Card (Dismissable via 'X' or once review submitted)
+            if (activeHomeBooking != null) {
                 item {
-                    val latestActive = bookings.firstOrNull {
-                        it.status == BookingStatus.PENDING || it.status == BookingStatus.ACCEPTED
+                    val isAccepted = activeHomeBooking.status == BookingStatus.ACCEPTED
+                    val isCompleted = activeHomeBooking.status == BookingStatus.COMPLETED
+                    val isInProgress = activeHomeBooking.status == BookingStatus.IN_PROGRESS
+
+                    val cardBg = when {
+                        isCompleted -> StatusCompletedBg
+                        isAccepted || isInProgress -> StatusAcceptedBg
+                        else -> StatusPendingBg
                     }
-                    if (latestActive != null) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (latestActive.status == BookingStatus.ACCEPTED) StatusAcceptedBg else StatusPendingBg
-                            )
+                    val primaryColor = when {
+                        isCompleted -> StatusCompleted
+                        isAccepted || isInProgress -> StatusAccepted
+                        else -> StatusPending
+                    }
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onBookingSelected(activeHomeBooking) },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = cardBg)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(horizontal = 14.dp, vertical = 12.dp)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .padding(14.dp)
-                                    .fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            Icon(
+                                imageVector = when {
+                                    isCompleted -> Icons.Default.ThumbUp
+                                    isAccepted || isInProgress -> Icons.Default.CheckCircle
+                                    else -> Icons.Default.Schedule
+                                },
+                                contentDescription = null,
+                                tint = primaryColor,
+                                modifier = Modifier.size(26.dp)
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = when {
+                                        isCompleted -> "🎉 Service completed! How was ${activeHomeBooking.providerName}?"
+                                        isAccepted -> "🎉 ${activeHomeBooking.providerName} accepted your request!"
+                                        isInProgress -> "⚡ Service in progress with ${activeHomeBooking.providerName}"
+                                        else -> "Request Pending: ${activeHomeBooking.category.displayName}"
+                                    },
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = primaryColor
+                                )
+                                Text(
+                                    text = if (isCompleted) "Tap to rate service or dismiss"
+                                    else "${activeHomeBooking.scheduledDate} • ${activeHomeBooking.scheduledSlot}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextPrimary
+                                )
+                            }
+
+                            // Dismiss / Cut-out button (X) removes from home while keeping in booking history
+                            IconButton(
+                                onClick = { repository.dismissBookingFromHome(activeHomeBooking.id) },
+                                modifier = Modifier.size(28.dp)
                             ) {
                                 Icon(
-                                    imageVector = if (latestActive.status == BookingStatus.ACCEPTED) Icons.Default.CheckCircle else Icons.Default.Schedule,
-                                    contentDescription = null,
-                                    tint = if (latestActive.status == BookingStatus.ACCEPTED) StatusAccepted else StatusPending,
-                                    modifier = Modifier.size(28.dp)
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Dismiss from Home",
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(18.dp)
                                 )
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = if (latestActive.status == BookingStatus.ACCEPTED)
-                                            "🎉 ${latestActive.providerName} accepted your request!"
-                                        else "Request Pending: ${latestActive.category.displayName}",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (latestActive.status == BookingStatus.ACCEPTED) StatusAccepted else StatusPending
-                                    )
-                                    Text(
-                                        text = "${latestActive.scheduledDate} • ${latestActive.scheduledSlot}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = TextPrimary
-                                    )
-                                }
-                                StatusBadge(status = latestActive.status)
                             }
                         }
                     }
@@ -1353,7 +1433,7 @@ fun BookingItemCard(
                                 letterSpacing = 0.5.sp
                             )
                             Text(
-                                text = booking.startOtp,
+                                text = booking.startOtp.ifBlank { "------" },
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = PrimaryBlue,
@@ -1377,7 +1457,7 @@ fun BookingItemCard(
                                 letterSpacing = 0.5.sp
                             )
                             Text(
-                                text = booking.completionOtp,
+                                text = booking.completionOtp.ifBlank { "------" },
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = StatusCompleted,
@@ -1422,7 +1502,7 @@ fun BookingItemCard(
                 ) {
                     Icon(Icons.Default.LocationOn, null, tint = TextSecondary, modifier = Modifier.size(16.dp))
                     Text(
-                        text = booking.customerAddress,
+                        text = booking.customerAddress.ifBlank { "Customer Location" },
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary
                     )
@@ -1434,7 +1514,7 @@ fun BookingItemCard(
                 ) {
                     Icon(Icons.Default.Description, null, tint = TextSecondary, modifier = Modifier.size(16.dp))
                     Text(
-                        text = "Issue: ${booking.issueDescription}",
+                        text = "Issue: ${booking.issueDescription.ifBlank { "General maintenance" }}",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary
                     )
@@ -1454,7 +1534,7 @@ fun BookingItemCard(
                 )
 
                 Text(
-                    text = "ID: #${booking.id.takeLast(5)}",
+                    text = "ID: #${if (booking.id.length >= 5) booking.id.takeLast(5) else booking.id}",
                     style = MaterialTheme.typography.labelSmall,
                     color = TextMuted
                 )

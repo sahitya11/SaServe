@@ -32,6 +32,9 @@ class ServiceSyncRepository(private val context: Context) {
     private val _notifications = MutableStateFlow<List<AppNotification>>(emptyList())
     val notifications: StateFlow<List<AppNotification>> = _notifications.asStateFlow()
 
+    private val _dismissedHomeBookingIds = MutableStateFlow<Set<String>>(emptySet())
+    val dismissedHomeBookingIds: StateFlow<Set<String>> = _dismissedHomeBookingIds.asStateFlow()
+
     init {
         loadOrInitializeData()
     }
@@ -55,7 +58,32 @@ class ServiceSyncRepository(private val context: Context) {
         val savedBookingsJson = prefs.getString(KEY_CUSTOM_BOOKINGS, null)
         if (!savedBookingsJson.isNullOrEmpty()) {
             val type = object : TypeToken<List<Booking>>() {}.type
-            _bookings.value = gson.fromJson(savedBookingsJson, type)
+            try {
+                val rawBookings: List<Booking>? = gson.fromJson(savedBookingsJson, type)
+                val sanitized = rawBookings?.map { b ->
+                    b.copy(
+                        id = if (b.id.isNullOrBlank()) ("bk_" + UUID.randomUUID().toString().take(8)) else b.id,
+                        customerId = b.customerId ?: "cust_user",
+                        customerName = b.customerName ?: "Customer",
+                        customerPhone = b.customerPhone ?: "+91 98765 43210",
+                        customerAddress = b.customerAddress ?: "Customer Address",
+                        providerId = b.providerId ?: "prov_default",
+                        providerName = b.providerName ?: "Service Specialist",
+                        providerPhone = b.providerPhone ?: "+91 98765 43210",
+                        category = b.category ?: ServiceCategory.ELECTRICIAN,
+                        scheduledDate = b.scheduledDate ?: "Scheduled Date",
+                        scheduledSlot = b.scheduledSlot ?: "11:00 AM - 01:00 PM",
+                        issueDescription = b.issueDescription ?: "General service",
+                        status = b.status ?: BookingStatus.PENDING,
+                        startOtp = if (b.startOtp.isNullOrBlank()) ((1000..9999).random()).toString() else b.startOtp,
+                        completionOtp = if (b.completionOtp.isNullOrBlank()) ((1000..9999).random()).toString() else b.completionOtp
+                    )
+                } ?: emptyList()
+                _bookings.value = sanitized
+                saveBookings(sanitized)
+            } catch (e: Exception) {
+                _bookings.value = emptyList()
+            }
         } else {
             _bookings.value = emptyList()
             saveBookings(emptyList())
@@ -91,6 +119,12 @@ class ServiceSyncRepository(private val context: Context) {
             // First time or logged out: user must register/sign in with phone and password
             _currentUser.value = null
             _isLoggedIn.value = false
+        }
+
+        // 5. Dismissed Home Bookings
+        val savedDismissed = prefs.getStringSet(KEY_DISMISSED_HOME_BOOKINGS, null)
+        if (savedDismissed != null) {
+            _dismissedHomeBookingIds.value = savedDismissed
         }
     }
 
@@ -520,6 +554,12 @@ class ServiceSyncRepository(private val context: Context) {
         saveNotifications(emptyList())
     }
 
+    fun dismissBookingFromHome(bookingId: String) {
+        val updated = _dismissedHomeBookingIds.value + bookingId
+        _dismissedHomeBookingIds.value = updated
+        prefs.edit().putStringSet(KEY_DISMISSED_HOME_BOOKINGS, updated).apply()
+    }
+
     companion object {
         private const val KEY_CUSTOM_PROVIDERS = "key_custom_providers_only_v2"
         private const val KEY_CUSTOM_BOOKINGS = "key_custom_bookings_v2"
@@ -527,6 +567,7 @@ class ServiceSyncRepository(private val context: Context) {
         private const val KEY_CURRENT_USER = "key_current_user"
         private const val KEY_REGISTERED_USERS = "key_registered_users_v2"
         private const val KEY_LOGGED_IN_PHONE = "key_logged_in_phone_v2"
+        private const val KEY_DISMISSED_HOME_BOOKINGS = "key_dismissed_home_bookings_v1"
 
         @Volatile
         private var INSTANCE: ServiceSyncRepository? = null
