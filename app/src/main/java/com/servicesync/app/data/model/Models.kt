@@ -42,6 +42,13 @@ enum class ServiceCategory(
     )
 }
 
+data class SavedAddress(
+    val id: String = "",
+    val label: String = "Home", // "Home", "Office", "Other"
+    val addressLine: String = "",
+    val isDefault: Boolean = false
+)
+
 data class User(
     val id: String,
     val name: String,
@@ -50,8 +57,10 @@ data class User(
     val password: String = "",
     val role: UserRole = UserRole.CUSTOMER,
     val address: String = "",
+    val savedAddresses: List<SavedAddress> = emptyList(),
     val providerId: String? = null // Linked if role == PROVIDER
 )
+
 
 data class TimeSlot(
     val id: String,

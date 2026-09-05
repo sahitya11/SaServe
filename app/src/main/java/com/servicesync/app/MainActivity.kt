@@ -8,14 +8,22 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.servicesync.app.data.model.Booking
 import com.servicesync.app.data.model.ServiceCategory
@@ -24,6 +32,7 @@ import com.servicesync.app.data.repository.ServiceSyncRepository
 import com.servicesync.app.ui.screens.auth.AuthScreen
 import com.servicesync.app.ui.screens.customer.*
 import com.servicesync.app.ui.theme.BackgroundLight
+import com.servicesync.app.ui.theme.PrimaryBlue
 import com.servicesync.app.ui.theme.ServiceSyncTheme
 import com.servicesync.app.ui.theme.StatusCancelled
 
@@ -43,6 +52,7 @@ class MainActivity : ComponentActivity() {
 }
 
 sealed class Screen {
+    object Splash : Screen()
     object Auth : Screen()
     object CustomerHome : Screen()
     data class ProviderList(val category: ServiceCategory) : Screen()
@@ -52,6 +62,7 @@ sealed class Screen {
     data class BookingStatus(val booking: Booking) : Screen()
     object Wallet : Screen()
     object HelpSupport : Screen()
+    object ManageAddresses : Screen()
 }
 
 
@@ -63,21 +74,23 @@ fun MainAppHost(initialNavTarget: String?) {
     val notifications by repository.notifications.collectAsState()
     val isLoggedIn by repository.isLoggedIn.collectAsState()
 
-    var currentScreen by remember {
-        mutableStateOf<Screen>(
-            if (!repository.isUserLoggedIn()) {
-                Screen.Auth
-            } else {
-                when (initialNavTarget) {
-                    "customer_bookings" -> Screen.CustomerBookings
-                    else -> Screen.CustomerHome
-                }
+    var currentScreen by remember { mutableStateOf<Screen>(Screen.Splash) }
+
+    // 2-Second Fullscreen SaServe Splash Screen Transition
+    LaunchedEffect(Unit) {
+        delay(2000)
+        currentScreen = if (!repository.isUserLoggedIn()) {
+            Screen.Auth
+        } else {
+            when (initialNavTarget) {
+                "customer_bookings" -> Screen.CustomerBookings
+                else -> Screen.CustomerHome
             }
-        )
+        }
     }
 
     LaunchedEffect(isLoggedIn) {
-        if (!isLoggedIn && currentScreen !is Screen.Auth) {
+        if (!isLoggedIn && currentScreen !is Screen.Auth && currentScreen !is Screen.Splash) {
             currentScreen = Screen.Auth
         }
     }
@@ -129,6 +142,10 @@ fun MainAppHost(initialNavTarget: String?) {
                 .padding(innerPadding)
         ) {
             when (val screen = currentScreen) {
+                is Screen.Splash -> {
+                    SplashScreen()
+                }
+
                 is Screen.Auth -> {
                     AuthScreen(
                         repository = repository,
@@ -161,6 +178,9 @@ fun MainAppHost(initialNavTarget: String?) {
                         },
                         onOpenHelp = {
                             currentScreen = Screen.HelpSupport
+                        },
+                        onOpenAddresses = {
+                            currentScreen = Screen.ManageAddresses
                         },
                         onAddProviderClick = {
                             addProviderCategory = null
@@ -246,7 +266,66 @@ fun MainAppHost(initialNavTarget: String?) {
                         onBackClick = { currentScreen = Screen.CustomerHome }
                     )
                 }
+
+                is Screen.ManageAddresses -> {
+                    ManageAddressesScreen(
+                        repository = repository,
+                        onBackClick = { currentScreen = Screen.CustomerHome }
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+fun SplashScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PrimaryBlue),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(90.dp)
+                    .clip(CircleShape)
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Handyman,
+                    contentDescription = "SaServe Logo",
+                    tint = PrimaryBlue,
+                    modifier = Modifier.size(54.dp)
+                )
+            }
+
+            Text(
+                text = "SaServe",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White,
+                letterSpacing = 1.sp
+            )
+
+            Text(
+                text = "Specialist Home Services at Your Doorstep",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.85f)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            CircularProgressIndicator(
+                color = Color.White,
+                strokeWidth = 3.dp,
+                modifier = Modifier.size(28.dp)
+            )
         }
     }
 }

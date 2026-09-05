@@ -41,6 +41,9 @@ class ServiceSyncRepository(private val context: Context) {
     private val _walletTransactions = MutableStateFlow<List<WalletTransaction>>(emptyList())
     val walletTransactions: StateFlow<List<WalletTransaction>> = _walletTransactions.asStateFlow()
 
+    private val _savedAddresses = MutableStateFlow<List<SavedAddress>>(emptyList())
+    val savedAddresses: StateFlow<List<SavedAddress>> = _savedAddresses.asStateFlow()
+
     init {
         loadOrInitializeData()
     }
@@ -121,10 +124,21 @@ class ServiceSyncRepository(private val context: Context) {
             val user = gson.fromJson(savedUserJson, User::class.java)
             _currentUser.value = user
             _isLoggedIn.value = true
+
+            // Load saved addresses
+            val initialAddresses = if (user.savedAddresses.isNotEmpty()) {
+                user.savedAddresses
+            } else if (user.address.isNotBlank()) {
+                listOf(SavedAddress(id = "addr_default", label = "Home", addressLine = user.address, isDefault = true))
+            } else {
+                emptyList()
+            }
+            _savedAddresses.value = initialAddresses
         } else {
             // First time or logged out: user must register/sign in with phone and password
             _currentUser.value = null
             _isLoggedIn.value = false
+            _savedAddresses.value = emptyList()
         }
 
         // 5. Dismissed Home Bookings
@@ -197,6 +211,12 @@ class ServiceSyncRepository(private val context: Context) {
         val cleanPassword = password.trim()
         if (cleanPhone.isBlank() || cleanPassword.isBlank()) return false
 
+        val initialAddressList = if (address.isNotBlank()) {
+            listOf(SavedAddress(id = "addr_" + UUID.randomUUID().toString().take(6), label = "Home", addressLine = address.trim(), isDefault = true))
+        } else {
+            emptyList()
+        }
+
         val newUser = User(
             id = "cust_" + UUID.randomUUID().toString().take(8),
             name = name.ifBlank { "Customer (${cleanPhone.takeLast(4)})" },
@@ -204,7 +224,8 @@ class ServiceSyncRepository(private val context: Context) {
             phone = cleanPhone,
             password = cleanPassword,
             role = UserRole.CUSTOMER,
-            address = address.ifBlank { "Home Address" }
+            address = address.ifBlank { "Home Address" },
+            savedAddresses = initialAddressList
         )
 
         // Save into registered users list
@@ -221,6 +242,7 @@ class ServiceSyncRepository(private val context: Context) {
 
         // Set as active logged-in user
         _currentUser.value = newUser
+        _savedAddresses.value = initialAddressList
         _isLoggedIn.value = true
         saveUser(newUser)
         prefs.edit().putString(KEY_LOGGED_IN_PHONE, cleanPhone).apply()
@@ -631,6 +653,68 @@ class ServiceSyncRepository(private val context: Context) {
         _walletTransactions.value = updatedTx
         saveWallet(newBalance, updatedTx)
         return true
+    }
+
+    fun addSavedAddress(label: String, addressLine: String, isDefault: Boolean = false): Boolean {
+        if (addressLine.isBlank()) return false
+        val newId = "addr_" + UUID.randomUUID().toString().take(6)
+        val cleanLabel = label.ifBlank { "Home" }
+        val currentList = _savedAddresses.value
+        val updatedList = if (isDefault || currentList.isEmpty()) {
+            currentList.map { it.copy(isDefault = false) } + SavedAddress(id = newId, label = cleanLabel, addressLine = addressLine.trim(), isDefault = true)
+        } else {
+            currentList + SavedAddress(id = newId, label = cleanLabel, addressLine = addressLine.trim(), isDefault = false)
+        }
+        _savedAddresses.value = updatedList
+
+        // Persist on current user
+        _currentUser.value?.let { u ->
+            val updatedUser = u.copy(
+                address = if (isDefault || u.address.isBlank()) addressLine.trim() else u.address,
+                savedAddresses = updatedList
+            )
+            _currentUser.value = updatedUser
+            saveUser(updatedUser)
+
+            val registered = getRegisteredUsers().map { if (it.id == updatedUser.id) updatedUser else it }
+            saveRegisteredUsers(registered)
+        }
+        return true
+    }
+
+    fun deleteSavedAddress(id: String) {
+        val filtered = _savedAddresses.value.filter { it.id != id }
+        val finalAddresses = if (filtered.none { it.isDefault } && filtered.isNotEmpty()) {
+            filtered.mapIndexed { idx, addr -> if (idx == 0) addr.copy(isDefault = true) else addr }
+        } else {
+            filtered
+        }
+        _savedAddresses.value = finalAddresses
+        _currentUser.value?.let { u ->
+            val defaultAddr = finalAddresses.firstOrNull { it.isDefault }?.addressLine ?: (finalAddresses.firstOrNull()?.addressLine ?: "")
+            val updatedUser = u.copy(address = defaultAddr, savedAddresses = finalAddresses)
+            _currentUser.value = updatedUser
+            saveUser(updatedUser)
+
+            val registered = getRegisteredUsers().map { if (it.id == updatedUser.id) updatedUser else it }
+            saveRegisteredUsers(registered)
+        }
+    }
+
+    fun setDefaultAddress(id: String) {
+        val updated = _savedAddresses.value.map {
+            it.copy(isDefault = (it.id == id))
+        }
+        _savedAddresses.value = updated
+        val defaultLine = updated.firstOrNull { it.id == id }?.addressLine ?: return
+        _currentUser.value?.let { u ->
+            val updatedUser = u.copy(address = defaultLine, savedAddresses = updated)
+            _currentUser.value = updatedUser
+            saveUser(updatedUser)
+
+            val registered = getRegisteredUsers().map { if (it.id == updatedUser.id) updatedUser else it }
+            saveRegisteredUsers(registered)
+        }
     }
 
     companion object {

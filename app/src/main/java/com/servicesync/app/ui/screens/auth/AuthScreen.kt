@@ -269,17 +269,86 @@ fun AuthScreen(
 
                     // Register-only: Address
                     if (isRegisterMode) {
-                        OutlinedTextField(
-                            value = addressInput,
-                            onValueChange = { addressInput = it; errorMessage = null },
-                            label = { Text("Service Address (Home / Flat)") },
-                            placeholder = { Text("e.g. Flat 301, Sunshine Heights, Bangalore") },
-                            leadingIcon = { Icon(Icons.Default.Home, null) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = false,
-                            maxLines = 2,
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                        val context = androidx.compose.ui.platform.LocalContext.current
+                        var isDetectingLocation by remember { mutableStateOf(false) }
+
+                        val locationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                            androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+                        ) { permissions ->
+                            val fineGranted = permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true
+                            val coarseGranted = permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true
+                            if (fineGranted || coarseGranted) {
+                                isDetectingLocation = true
+                                com.servicesync.app.ui.screens.customer.detectCurrentGpsLocation(context) { detected ->
+                                    isDetectingLocation = false
+                                    if (!detected.isNullOrBlank()) {
+                                        addressInput = detected
+                                    }
+                                }
+                            }
+                        }
+
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            OutlinedTextField(
+                                value = addressInput,
+                                onValueChange = { addressInput = it; errorMessage = null },
+                                label = { Text("Service Address (Home / Flat)") },
+                                placeholder = { Text("e.g. Flat 301, Sunshine Heights, Bangalore") },
+                                leadingIcon = { Icon(Icons.Default.Home, null) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = false,
+                                maxLines = 2,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+
+                            // GPS Auto-detect button
+                            OutlinedButton(
+                                onClick = {
+                                    val fineGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                                        context,
+                                        android.Manifest.permission.ACCESS_FINE_LOCATION
+                                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                    val coarseGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                                        context,
+                                        android.Manifest.permission.ACCESS_COARSE_LOCATION
+                                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+                                    if (fineGranted || coarseGranted) {
+                                        isDetectingLocation = true
+                                        com.servicesync.app.ui.screens.customer.detectCurrentGpsLocation(context) { detected ->
+                                            isDetectingLocation = false
+                                            if (!detected.isNullOrBlank()) {
+                                                addressInput = detected
+                                            }
+                                        }
+                                    } else {
+                                        locationPermissionLauncher.launch(
+                                            arrayOf(
+                                                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                                android.Manifest.permission.ACCESS_COARSE_LOCATION
+                                            )
+                                        )
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue)
+                            ) {
+                                if (isDetectingLocation) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = PrimaryBlue
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Detecting GPS Location...", fontSize = 13.sp)
+                                } else {
+                                    Icon(Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("📍 Auto-detect GPS Location", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
                     }
 
                     // Action Button

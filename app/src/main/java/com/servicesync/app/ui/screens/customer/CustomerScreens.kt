@@ -43,6 +43,7 @@ fun CustomerHomeScreen(
     onOpenBookings: () -> Unit,
     onOpenWallet: () -> Unit,
     onOpenHelp: () -> Unit,
+    onOpenAddresses: () -> Unit,
     onAddProviderClick: () -> Unit,
     onLogoutClick: () -> Unit = {},
     onBookingSelected: (Booking) -> Unit = {}
@@ -56,6 +57,7 @@ fun CustomerHomeScreen(
     val notifications by repository.notifications.collectAsState()
     val bookings by repository.bookings.collectAsState()
     val walletBalance by repository.walletBalance.collectAsState()
+    val savedAddresses by repository.savedAddresses.collectAsState()
     val dismissedHomeIds by repository.dismissedHomeBookingIds.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
@@ -120,7 +122,7 @@ fun CustomerHomeScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Handyman,
+                                    imageVector = Icons.Default.Person,
                                     contentDescription = null,
                                     tint = PrimaryBlue,
                                     modifier = Modifier.size(28.dp)
@@ -234,6 +236,33 @@ fun CustomerHomeScreen(
                 )
 
                 NavigationDrawerItem(
+                    label = { Text("Manage Addresses", fontWeight = FontWeight.SemiBold) },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        onOpenAddresses()
+                    },
+                    icon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = PrimaryBlue) },
+                    badge = {
+                        if (savedAddresses.isNotEmpty()) {
+                            Surface(
+                                shape = CircleShape,
+                                color = StatusAcceptedBg
+                            ) {
+                                Text(
+                                    text = "${savedAddresses.size}",
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 1.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = PrimaryBlue,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                )
+
+                NavigationDrawerItem(
                     label = { Text("Help & Support", fontWeight = FontWeight.SemiBold) },
                     selected = false,
                     onClick = {
@@ -325,96 +354,53 @@ fun CustomerHomeScreen(
                         }
                     },
                     title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            // SaServe Brand Logo Icon Badge
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(RoundedCornerShape(9.dp))
-                                    .background(PrimaryBlue),
-                                contentAlignment = Alignment.Center
+                        Column {
+                            // User Name in place of the logo
+                            val customerGreeting = if (!currentUser?.name.isNullOrBlank()) {
+                                "Hi, ${currentUser?.name}"
+                            } else {
+                                "Hi, Customer"
+                            }
+                            Text(
+                                text = customerGreeting,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = TextPrimary,
+                                maxLines = 1
+                            )
+
+                            // Current default address subtitle
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                modifier = Modifier.clickable { onOpenAddresses() }
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Handyman,
-                                    contentDescription = "SaServe Logo",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
+                                    Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    tint = PrimaryBlue,
+                                    modifier = Modifier.size(12.dp)
                                 )
-                            }
-
-                            Column {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(
-                                        text = "SaServe",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = PrimaryBlue,
-                                        letterSpacing = 0.5.sp
-                                    )
-                                    Surface(
-                                        shape = RoundedCornerShape(4.dp),
-                                        color = StatusAcceptedBg
-                                    ) {
-                                        Text(
-                                            text = "PRO",
-                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = PrimaryBlue,
-                                            fontSize = 9.sp
-                                        )
-                                    }
-                                }
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.LocationOn,
-                                        contentDescription = null,
-                                        tint = TextSecondary,
-                                        modifier = Modifier.size(11.dp)
-                                    )
-                                    Text(
-                                        text = currentUser?.address?.ifBlank { "Home Location" }?.take(18) ?: "Home Location",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = TextSecondary,
-                                        maxLines = 1
-                                    )
-                                }
+                                Text(
+                                    text = currentUser?.address?.ifBlank { "Add address" }?.take(22) ?: "Add address",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextSecondary,
+                                    maxLines = 1
+                                )
+                                Icon(
+                                    Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Switch address",
+                                    tint = TextSecondary,
+                                    modifier = Modifier.size(14.dp)
+                                )
                             }
                         }
                     },
                     actions = {
-                        // Add Provider Quick Button
-                        FilledTonalButton(
-                            onClick = onAddProviderClick,
-                            shape = RoundedCornerShape(18.dp),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = StatusAcceptedBg,
-                                contentColor = PrimaryBlue
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add Provider",
-                                modifier = Modifier.size(15.dp)
-                            )
-                            Spacer(modifier = Modifier.width(2.dp))
-                            Text("+ Pro", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                        }
-
-                        // Top-Right Ring-Shaped Notification Bell
+                        // Top-Right Ring-Shaped Notification Bell (with +Pro removed as requested)
                         IconButton(
                             onClick = onOpenNotifications,
-                            modifier = Modifier.padding(start = 2.dp, end = 4.dp)
+                            modifier = Modifier.padding(end = 4.dp)
                         ) {
                             Box(
                                 modifier = Modifier
@@ -1354,6 +1340,8 @@ fun ProviderDetailScreen(
 
             // Booking Details Form
             item {
+                val savedAddresses by repository.savedAddresses.collectAsState()
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -1368,6 +1356,48 @@ fun ProviderDetailScreen(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
+
+                        // Saved Addresses Selector Chips
+                        if (savedAddresses.isNotEmpty()) {
+                            Text(
+                                text = "Select from Saved Addresses:",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = TextSecondary
+                            )
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                items(savedAddresses) { addr ->
+                                    val isSelected = addressText == addr.addressLine
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { addressText = addr.addressLine },
+                                        label = {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Icon(
+                                                    when (addr.label) {
+                                                        "Home" -> Icons.Default.Home
+                                                        "Office" -> Icons.Default.Work
+                                                        else -> Icons.Default.LocationOn
+                                                    },
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                                Text("${addr.label}: ${addr.addressLine.take(18)}...")
+                                            }
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = StatusAcceptedBg,
+                                            selectedLabelColor = PrimaryBlue
+                                        )
+                                    )
+                                }
+                            }
+                        }
 
                         OutlinedTextField(
                             value = addressText,
@@ -2620,4 +2650,390 @@ fun HelpSupportScreen(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ManageAddressesScreen(
+    repository: ServiceSyncRepository,
+    onBackClick: () -> Unit
+) {
+    val context = LocalContext.current
+    val savedAddresses by repository.savedAddresses.collectAsState()
+
+    var showAddDialog by remember { mutableStateOf(false) }
+    var labelInput by remember { mutableStateOf("Home") }
+    var addressInput by remember { mutableStateOf("") }
+    var isDefaultInput by remember { mutableStateOf(false) }
+    var isDetectingGps by remember { mutableStateOf(false) }
+
+    // GPS Location Launcher
+    val locationLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            isDetectingGps = true
+            detectCurrentGpsLocation(context) { detected ->
+                isDetectingGps = false
+                if (!detected.isNullOrBlank()) {
+                    addressInput = detected
+                    Toast.makeText(context, "Location detected via GPS!", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Could not detect GPS location. Please check location settings.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } else {
+            Toast.makeText(context, "Location permission is required to detect GPS location.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    if (showAddDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddDialog = false },
+            title = { Text("Add New Service Address") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text("Address Tag", style = MaterialTheme.typography.labelMedium)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf("Home", "Office", "Other").forEach { tag ->
+                            FilterChip(
+                                selected = labelInput == tag,
+                                onClick = { labelInput = tag },
+                                label = { Text(tag) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = PrimaryBlue,
+                                    selectedLabelColor = Color.White
+                                )
+                            )
+                        }
+                    }
+
+                    // GPS Auto-detect Button
+                    OutlinedButton(
+                        onClick = {
+                            locationLauncher.launch(
+                                arrayOf(
+                                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        if (isDetectingGps) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Detecting GPS...")
+                        } else {
+                            Icon(Icons.Default.MyLocation, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("📍 Auto-detect GPS Location", color = PrimaryBlue, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = addressInput,
+                        onValueChange = { addressInput = it },
+                        label = { Text("Complete Address") },
+                        placeholder = { Text("House/Flat No, Street, Landmark, City") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Checkbox(
+                            checked = isDefaultInput,
+                            onCheckedChange = { isDefaultInput = it }
+                        )
+                        Text("Set as default service address", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (addressInput.isNotBlank()) {
+                            repository.addSavedAddress(
+                                label = labelInput,
+                                addressLine = addressInput,
+                                isDefault = isDefaultInput
+                            )
+                            showAddDialog = false
+                            addressInput = ""
+                            isDefaultInput = false
+                            Toast.makeText(context, "Address added successfully!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Please enter an address", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                ) {
+                    Text("Save Address")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Manage Saved Addresses") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundLight)
+            )
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = {
+                    labelInput = "Home"
+                    addressInput = ""
+                    isDefaultInput = savedAddresses.isEmpty()
+                    showAddDialog = true
+                },
+                containerColor = PrimaryBlue,
+                contentColor = Color.White,
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("Add Address", fontWeight = FontWeight.Bold) }
+            )
+        },
+        containerColor = BackgroundLight
+    ) { padding ->
+        if (savedAddresses.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape)
+                            .background(PrimaryBlue.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOff,
+                            contentDescription = null,
+                            tint = PrimaryBlue,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                    Text(
+                        text = "No saved addresses yet",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Add your home, office, or other locations so you can select them with one tap during bookings.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                        textAlign = TextAlign.Center
+                    )
+                    Button(
+                        onClick = { showAddDialog = true },
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                    ) {
+                        Icon(Icons.Default.AddLocationAlt, null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Add First Address")
+                    }
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                item {
+                    Text(
+                        text = "Your Saved Locations (${savedAddresses.size})",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                items(savedAddresses) { addr ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                        border = if (addr.isDefault) BorderStroke(1.5.dp, PrimaryBlue) else null
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .background(if (addr.isDefault) StatusAcceptedBg else SurfaceVariantLight),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = when (addr.label) {
+                                        "Home" -> Icons.Default.Home
+                                        "Office" -> Icons.Default.Work
+                                        else -> Icons.Default.LocationOn
+                                    },
+                                    contentDescription = null,
+                                    tint = if (addr.isDefault) PrimaryBlue else TextSecondary,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = addr.label,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    if (addr.isDefault) {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = StatusAcceptedBg
+                                        ) {
+                                            Text(
+                                                text = "DEFAULT",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = PrimaryBlue,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                fontSize = 9.sp
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Text(
+                                    text = addr.addressLine,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextSecondary,
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+
+                                if (!addr.isDefault) {
+                                    TextButton(
+                                        onClick = { repository.setDefaultAddress(addr.id) },
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text("Set as Default", fontSize = 12.sp, color = PrimaryBlue)
+                                    }
+                                }
+                            }
+
+                            IconButton(onClick = { repository.deleteSavedAddress(addr.id) }) {
+                                Icon(
+                                    Icons.Default.DeleteOutline,
+                                    contentDescription = "Delete Address",
+                                    tint = StatusCancelled,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Helper to retrieve device GPS coordinates and reverse geocode to a human-readable street address.
+ */
+fun detectCurrentGpsLocation(context: android.content.Context, onResult: (String?) -> Unit) {
+    try {
+        val locationManager = context.getSystemService(android.content.Context.LOCATION_SERVICE) as? android.location.LocationManager
+        if (locationManager == null) {
+            onResult(null)
+            return
+        }
+
+        val hasFine = androidx.core.content.ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.ACCESS_FINE_LOCATION
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+        val hasCoarse = androidx.core.content.ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+        if (!hasFine && !hasCoarse) {
+            onResult(null)
+            return
+        }
+
+        // Check GPS or Network last known location
+        val location = locationManager.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER)
+            ?: locationManager.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER)
+            ?: locationManager.getLastKnownLocation(android.location.LocationManager.PASSIVE_PROVIDER)
+
+        if (location != null) {
+            try {
+                val geocoder = android.location.Geocoder(context, java.util.Locale.getDefault())
+                val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                if (!addresses.isNullOrEmpty()) {
+                    val addr = addresses[0]
+                    val feature = addr.featureName
+                    val subLocality = addr.subLocality ?: addr.locality
+                    val city = addr.adminArea ?: addr.subAdminArea
+                    val postal = addr.postalCode
+                    val fullAddress = listOfNotNull(feature, subLocality, city, postal)
+                        .filter { it.isNotBlank() }
+                        .joinToString(", ")
+                    onResult(if (fullAddress.isNotBlank()) fullAddress else "Lat: ${location.latitude}, Lng: ${location.longitude}")
+                } else {
+                    onResult("GPS Coordinates: ${String.format(java.util.Locale.US, "%.4f, %.4f", location.latitude, location.longitude)}")
+                }
+            } catch (e: Exception) {
+                onResult("GPS Location: ${String.format(java.util.Locale.US, "%.4f, %.4f", location.latitude, location.longitude)}")
+            }
+        } else {
+            onResult("Current GPS Location (Simulated City Center, Karnataka)")
+        }
+    } catch (e: Exception) {
+        onResult("Current GPS Location (Location Provider)")
+    }
+}
+
 
