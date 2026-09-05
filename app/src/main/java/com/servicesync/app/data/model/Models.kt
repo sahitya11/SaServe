@@ -46,8 +46,32 @@ data class SavedAddress(
     val id: String = "",
     val label: String = "Home", // "Home", "Office", "Other"
     val addressLine: String = "",
+    val flatHouseNo: String = "",
+    val streetArea: String = "",
+    val landmark: String = "",
+    val reachInstructions: String = "",
     val isDefault: Boolean = false
-)
+) {
+    /**
+     * Builds a detailed, formatted string containing flat, street, landmark, and reach instructions.
+     */
+    val formattedDisplayAddress: String
+        get() {
+            val parts = mutableListOf<String>()
+            if (flatHouseNo.isNotBlank()) parts.add(flatHouseNo.trim())
+            if (streetArea.isNotBlank()) parts.add(streetArea.trim())
+            if (addressLine.isNotBlank() && addressLine.trim() != streetArea.trim()) {
+                parts.add(addressLine.trim())
+            }
+            if (landmark.isNotBlank()) parts.add("Near ${landmark.trim()}")
+            val base = if (parts.isNotEmpty()) parts.joinToString(", ") else addressLine
+            return if (reachInstructions.isNotBlank()) {
+                "$base\n(Instructions: ${reachInstructions.trim()})"
+            } else {
+                base
+            }
+        }
+}
 
 data class User(
     val id: String = "",

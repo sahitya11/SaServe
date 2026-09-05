@@ -39,6 +39,10 @@ fun AuthScreen(
     var passwordInput by remember { mutableStateOf("") }
     var nameInput by remember { mutableStateOf("") }
     var addressInput by remember { mutableStateOf("") }
+    var flatHouseInput by remember { mutableStateOf("") }
+    var streetAreaInput by remember { mutableStateOf("") }
+    var landmarkInput by remember { mutableStateOf("") }
+    var instructionsInput by remember { mutableStateOf("") }
 
     var passwordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -267,7 +271,7 @@ fun AuthScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    // Register-only: Address
+                    // Register-only: Address Form
                     if (isRegisterMode) {
                         val context = androidx.compose.ui.platform.LocalContext.current
                         var isDetectingLocation by remember { mutableStateOf(false) }
@@ -282,23 +286,22 @@ fun AuthScreen(
                                 com.servicesync.app.ui.screens.customer.detectCurrentGpsLocation(context) { detected ->
                                     isDetectingLocation = false
                                     if (!detected.isNullOrBlank()) {
+                                        streetAreaInput = detected
                                         addressInput = detected
                                     }
                                 }
                             }
                         }
 
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            OutlinedTextField(
-                                value = addressInput,
-                                onValueChange = { addressInput = it; errorMessage = null },
-                                label = { Text("Service Address (Home / Flat)") },
-                                placeholder = { Text("e.g. Flat 301, Sunshine Heights, Bangalore") },
-                                leadingIcon = { Icon(Icons.Default.Home, null) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = false,
-                                maxLines = 2,
-                                shape = RoundedCornerShape(12.dp)
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Service Address Details",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
                             )
 
                             // GPS Auto-detect button
@@ -318,6 +321,7 @@ fun AuthScreen(
                                         com.servicesync.app.ui.screens.customer.detectCurrentGpsLocation(context) { detected ->
                                             isDetectingLocation = false
                                             if (!detected.isNullOrBlank()) {
+                                                streetAreaInput = detected
                                                 addressInput = detected
                                             }
                                         }
@@ -341,13 +345,62 @@ fun AuthScreen(
                                         color = PrimaryBlue
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Detecting GPS Location...", fontSize = 13.sp)
+                                    Text("Detecting GPS Street / Area...", fontSize = 13.sp)
                                 } else {
                                     Icon(Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("📍 Auto-detect GPS Location", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                    Text("📍 Auto-detect GPS Street / Area", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                                 }
                             }
+
+                            // Flat / House No
+                            OutlinedTextField(
+                                value = flatHouseInput,
+                                onValueChange = { flatHouseInput = it; errorMessage = null },
+                                label = { Text("Flat / House / Building No.") },
+                                placeholder = { Text("e.g. Flat 301, Sunshine Heights") },
+                                leadingIcon = { Icon(Icons.Default.Apartment, null) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+
+                            // Street / Road / Area
+                            OutlinedTextField(
+                                value = streetAreaInput,
+                                onValueChange = { streetAreaInput = it; addressInput = it; errorMessage = null },
+                                label = { Text("Street / Road / Area / Sector") },
+                                placeholder = { Text("e.g. 14th Main Rd, Indiranagar") },
+                                leadingIcon = { Icon(Icons.Default.Signpost, null) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+
+                            // Landmark
+                            OutlinedTextField(
+                                value = landmarkInput,
+                                onValueChange = { landmarkInput = it; errorMessage = null },
+                                label = { Text("Nearby Landmark (Optional)") },
+                                placeholder = { Text("e.g. Opposite Metro Station, Near Park") },
+                                leadingIcon = { Icon(Icons.Default.NearMe, null) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+
+                            // Reach Instructions
+                            OutlinedTextField(
+                                value = instructionsInput,
+                                onValueChange = { instructionsInput = it; errorMessage = null },
+                                label = { Text("Instructions to Reach (Optional)") },
+                                placeholder = { Text("e.g. Ring doorbell #3, take lift to 3rd floor") },
+                                leadingIcon = { Icon(Icons.Default.Directions, null) },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 2,
+                                maxLines = 3,
+                                shape = RoundedCornerShape(12.dp)
+                            )
                         }
                     }
 
@@ -372,11 +425,16 @@ fun AuthScreen(
 
                             isLoading = true
                             if (isRegisterMode) {
+                                val fullAddr = if (streetAreaInput.isNotBlank()) streetAreaInput else addressInput
                                 val success = repository.registerCustomer(
                                     phone = cleanPhone,
                                     password = cleanPassword,
                                     name = nameInput.ifBlank { "Customer" },
-                                    address = addressInput.ifBlank { "Home Address" }
+                                    address = fullAddr.ifBlank { "Home Address" },
+                                    flatHouseNo = flatHouseInput,
+                                    streetArea = streetAreaInput,
+                                    landmark = landmarkInput,
+                                    reachInstructions = instructionsInput
                                 )
                                 isLoading = false
                                 if (success) {

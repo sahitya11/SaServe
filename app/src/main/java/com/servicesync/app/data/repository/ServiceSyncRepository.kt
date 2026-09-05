@@ -224,16 +224,45 @@ class ServiceSyncRepository(private val context: Context) {
         return _isLoggedIn.value
     }
 
-    fun registerCustomer(phone: String, password: String, name: String, address: String): Boolean {
+    fun registerCustomer(
+        phone: String,
+        password: String,
+        name: String,
+        address: String,
+        flatHouseNo: String = "",
+        streetArea: String = "",
+        landmark: String = "",
+        reachInstructions: String = ""
+    ): Boolean {
         val cleanPhone = phone.trim()
         val cleanPassword = password.trim()
         if (cleanPhone.isBlank() || cleanPassword.isBlank()) return false
 
-        val initialAddressList = if (address.isNotBlank()) {
-            listOf(SavedAddress(id = "addr_" + UUID.randomUUID().toString().take(6), label = "Home", addressLine = address.trim(), isDefault = true))
+        val fullAddressLine = if (address.isNotBlank()) address.trim() else listOfNotNull(
+            flatHouseNo.takeIf { it.isNotBlank() },
+            streetArea.takeIf { it.isNotBlank() },
+            landmark.takeIf { it.isNotBlank() }?.let { "Near $it" }
+        ).joinToString(", ")
+
+        val initialAddressList = if (fullAddressLine.isNotBlank() || flatHouseNo.isNotBlank()) {
+            listOf(
+                SavedAddress(
+                    id = "addr_" + UUID.randomUUID().toString().take(6),
+                    label = "Home",
+                    addressLine = if (fullAddressLine.isNotBlank()) fullAddressLine else "Home Address",
+                    flatHouseNo = flatHouseNo.trim(),
+                    streetArea = streetArea.trim(),
+                    landmark = landmark.trim(),
+                    reachInstructions = reachInstructions.trim(),
+                    isDefault = true
+                )
+            )
         } else {
             emptyList()
         }
+
+        val primaryAddressString = initialAddressList.firstOrNull()?.formattedDisplayAddress
+            ?: address.ifBlank { "Home Address" }
 
         val newUser = User(
             id = "cust_" + UUID.randomUUID().toString().take(8),
@@ -242,7 +271,7 @@ class ServiceSyncRepository(private val context: Context) {
             phone = cleanPhone,
             password = cleanPassword,
             role = UserRole.CUSTOMER,
-            address = address.ifBlank { "Home Address" },
+            address = primaryAddressString,
             savedAddresses = initialAddressList
         )
 
@@ -694,22 +723,48 @@ class ServiceSyncRepository(private val context: Context) {
         return true
     }
 
-    fun addSavedAddress(label: String, addressLine: String, isDefault: Boolean = false): Boolean {
-        if (addressLine.isBlank()) return false
-        val newId = "addr_" + UUID.randomUUID().toString().take(6)
+    fun addSavedAddress(
+        label: String,
+        addressLine: String,
+        flatHouseNo: String = "",
+        streetArea: String = "",
+        landmark: String = "",
+        reachInstructions: String = "",
+        isDefault: Boolean = false
+    ): Boolean {
         val cleanLabel = label.ifBlank { "Home" }
+        val newId = "addr_" + UUID.randomUUID().toString().take(6)
+        val fullLine = if (addressLine.isNotBlank()) addressLine.trim() else listOfNotNull(
+            flatHouseNo.takeIf { it.isNotBlank() },
+            streetArea.takeIf { it.isNotBlank() },
+            landmark.takeIf { it.isNotBlank() }?.let { "Near $it" }
+        ).joinToString(", ")
+
+        if (fullLine.isBlank() && flatHouseNo.isBlank() && streetArea.isBlank()) return false
+
+        val newAddress = SavedAddress(
+            id = newId,
+            label = cleanLabel,
+            addressLine = fullLine,
+            flatHouseNo = flatHouseNo.trim(),
+            streetArea = streetArea.trim(),
+            landmark = landmark.trim(),
+            reachInstructions = reachInstructions.trim(),
+            isDefault = isDefault
+        )
+
         val currentList = _savedAddresses.value
         val updatedList = if (isDefault || currentList.isEmpty()) {
-            currentList.map { it.copy(isDefault = false) } + SavedAddress(id = newId, label = cleanLabel, addressLine = addressLine.trim(), isDefault = true)
+            currentList.map { it.copy(isDefault = false) } + newAddress.copy(isDefault = true)
         } else {
-            currentList + SavedAddress(id = newId, label = cleanLabel, addressLine = addressLine.trim(), isDefault = false)
+            currentList + newAddress
         }
         _savedAddresses.value = updatedList
 
         // Persist on current user
         _currentUser.value?.let { u ->
             val updatedUser = u.copy(
-                address = if (isDefault || u.address.isBlank()) addressLine.trim() else u.address,
+                address = if (isDefault || u.address.isBlank()) newAddress.formattedDisplayAddress else u.address,
                 savedAddresses = updatedList
             )
             _currentUser.value = updatedUser

@@ -1352,7 +1352,7 @@ fun ProviderDetailScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "3. Job Details & Location",
+                            text = "3. Precise Service Location & Instructions",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -1369,10 +1369,12 @@ fun ProviderDetailScreen(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 items(savedAddresses) { addr ->
-                                    val isSelected = addressText == addr.addressLine
+                                    val isSelected = addressText == addr.formattedDisplayAddress || addressText == addr.addressLine
                                     FilterChip(
                                         selected = isSelected,
-                                        onClick = { addressText = addr.addressLine },
+                                        onClick = {
+                                            addressText = addr.formattedDisplayAddress
+                                        },
                                         label = {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
@@ -1387,7 +1389,7 @@ fun ProviderDetailScreen(
                                                     contentDescription = null,
                                                     modifier = Modifier.size(14.dp)
                                                 )
-                                                Text("${addr.label}: ${addr.addressLine.take(18)}...")
+                                                Text("${addr.label}: ${(addr.flatHouseNo.takeIf { it.isNotBlank() } ?: addr.addressLine).take(18)}...")
                                             }
                                         },
                                         colors = FilterChipDefaults.filterChipColors(
@@ -1402,16 +1404,19 @@ fun ProviderDetailScreen(
                         OutlinedTextField(
                             value = addressText,
                             onValueChange = { addressText = it },
-                            label = { Text("Service Location Address") },
+                            label = { Text("Service Location (Flat, Street, Landmark, City)") },
+                            placeholder = { Text("e.g. Flat 304, Tower B, 14th Main, Near Apollo Pharmacy") },
                             leadingIcon = { Icon(Icons.Default.LocationOn, null) },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 2,
+                            maxLines = 3
                         )
 
                         OutlinedTextField(
                             value = issueText,
                             onValueChange = { issueText = it },
-                            label = { Text("Describe the Issue / Requirement") },
-                            placeholder = { Text("e.g. Water leak under sink, need tap replacement...") },
+                            label = { Text("Describe the Issue / Job Requirements") },
+                            placeholder = { Text("e.g. Water leak under kitchen sink, switchboard sparked...") },
                             leadingIcon = { Icon(Icons.Default.Description, null) },
                             modifier = Modifier.fillMaxWidth(),
                             minLines = 3,
@@ -2663,6 +2668,10 @@ fun ManageAddressesScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var labelInput by remember { mutableStateOf("Home") }
     var addressInput by remember { mutableStateOf("") }
+    var flatHouseInput by remember { mutableStateOf("") }
+    var streetAreaInput by remember { mutableStateOf("") }
+    var landmarkInput by remember { mutableStateOf("") }
+    var instructionsInput by remember { mutableStateOf("") }
     var isDefaultInput by remember { mutableStateOf(false) }
     var isDetectingGps by remember { mutableStateOf(false) }
 
@@ -2677,6 +2686,7 @@ fun ManageAddressesScreen(
             detectCurrentGpsLocation(context) { detected ->
                 isDetectingGps = false
                 if (!detected.isNullOrBlank()) {
+                    streetAreaInput = detected
                     addressInput = detected
                     Toast.makeText(context, "Location detected via GPS!", Toast.LENGTH_SHORT).show()
                 } else {
@@ -2691,13 +2701,23 @@ fun ManageAddressesScreen(
     if (showAddDialog) {
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Add New Service Address") },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.AddLocationAlt, contentDescription = null, tint = PrimaryBlue)
+                    Text("Add Precise Service Address", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+            },
             text = {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text("Address Tag", style = MaterialTheme.typography.labelMedium)
+                    Text("1. Address Tag", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -2735,18 +2755,58 @@ fun ManageAddressesScreen(
                         } else {
                             Icon(Icons.Default.MyLocation, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("📍 Auto-detect GPS Location", color = PrimaryBlue, fontWeight = FontWeight.SemiBold)
+                            Text("📍 Auto-detect GPS Street / Area", color = PrimaryBlue, fontWeight = FontWeight.SemiBold)
                         }
                     }
 
+                    Text("2. Precise Location Details", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+
+                    // Flat / House / Building
                     OutlinedTextField(
-                        value = addressInput,
-                        onValueChange = { addressInput = it },
-                        label = { Text("Complete Address") },
-                        placeholder = { Text("House/Flat No, Street, Landmark, City") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(100.dp),
+                        value = flatHouseInput,
+                        onValueChange = { flatHouseInput = it },
+                        label = { Text("House / Flat / Floor / Building No.") },
+                        placeholder = { Text("e.g. Flat 304, Tower B, Palm Meadows") },
+                        leadingIcon = { Icon(Icons.Default.Apartment, null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+
+                    // Street / Area / Sector
+                    OutlinedTextField(
+                        value = streetAreaInput,
+                        onValueChange = { streetAreaInput = it; addressInput = it },
+                        label = { Text("Street / Road / Area / Sector") },
+                        placeholder = { Text("e.g. 14th Main Rd, Indiranagar, 2nd Stage") },
+                        leadingIcon = { Icon(Icons.Default.Signpost, null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+
+                    // Landmark
+                    OutlinedTextField(
+                        value = landmarkInput,
+                        onValueChange = { landmarkInput = it },
+                        label = { Text("Nearby Landmark (Optional)") },
+                        placeholder = { Text("e.g. Behind Apollo Pharmacy, opposite Metro Pillar 42") },
+                        leadingIcon = { Icon(Icons.Default.NearMe, null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+
+                    // Instructions to Reach Location
+                    OutlinedTextField(
+                        value = instructionsInput,
+                        onValueChange = { instructionsInput = it },
+                        label = { Text("Instructions to Reach Location (Optional)") },
+                        placeholder = { Text("e.g. Ring doorbell #3, take lift to 3rd floor, gate code 1234") },
+                        leadingIcon = { Icon(Icons.Default.Directions, null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2,
+                        maxLines = 3,
                         shape = RoundedCornerShape(10.dp)
                     )
 
@@ -2765,18 +2825,27 @@ fun ManageAddressesScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        if (addressInput.isNotBlank()) {
+                        val baseLine = if (streetAreaInput.isNotBlank()) streetAreaInput else addressInput
+                        if (baseLine.isNotBlank() || flatHouseInput.isNotBlank()) {
                             repository.addSavedAddress(
                                 label = labelInput,
-                                addressLine = addressInput,
+                                addressLine = baseLine,
+                                flatHouseNo = flatHouseInput,
+                                streetArea = streetAreaInput,
+                                landmark = landmarkInput,
+                                reachInstructions = instructionsInput,
                                 isDefault = isDefaultInput
                             )
                             showAddDialog = false
                             addressInput = ""
+                            flatHouseInput = ""
+                            streetAreaInput = ""
+                            landmarkInput = ""
+                            instructionsInput = ""
                             isDefaultInput = false
-                            Toast.makeText(context, "Address added successfully!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Precise address added successfully!", Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(context, "Please enter an address", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Please enter at least house/flat or street details", Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
@@ -2809,13 +2878,17 @@ fun ManageAddressesScreen(
                 onClick = {
                     labelInput = "Home"
                     addressInput = ""
+                    flatHouseInput = ""
+                    streetAreaInput = ""
+                    landmarkInput = ""
+                    instructionsInput = ""
                     isDefaultInput = savedAddresses.isEmpty()
                     showAddDialog = true
                 },
                 containerColor = PrimaryBlue,
                 contentColor = Color.White,
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Add Address", fontWeight = FontWeight.Bold) }
+                text = { Text("Add Precise Address", fontWeight = FontWeight.Bold) }
             )
         },
         containerColor = BackgroundLight
@@ -2852,7 +2925,7 @@ fun ManageAddressesScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Add your home, office, or other locations so you can select them with one tap during bookings.",
+                        text = "Add your home, office, or other locations with flat number, street, landmark, and directions so specialists reach without confusion.",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary,
                         textAlign = TextAlign.Center
@@ -2895,7 +2968,7 @@ fun ManageAddressesScreen(
                             modifier = Modifier
                                 .padding(16.dp)
                                 .fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
+                            verticalAlignment = Alignment.Top,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Box(
@@ -2917,7 +2990,10 @@ fun ManageAddressesScreen(
                                 )
                             }
 
-                            Column(modifier = Modifier.weight(1f)) {
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(3.dp)
+                            ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -2944,17 +3020,61 @@ fun ManageAddressesScreen(
                                     }
                                 }
 
+                                // Flat & Street
+                                if (addr.flatHouseNo.isNotBlank() || addr.streetArea.isNotBlank()) {
+                                    Text(
+                                        text = listOfNotNull(addr.flatHouseNo.takeIf { it.isNotBlank() }, addr.streetArea.takeIf { it.isNotBlank() }).joinToString(", "),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = TextPrimary
+                                    )
+                                }
+
+                                // Full address line or city
                                 Text(
                                     text = addr.addressLine,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = TextSecondary,
-                                    modifier = Modifier.padding(top = 2.dp)
+                                    color = TextSecondary
                                 )
+
+                                // Landmark
+                                if (addr.landmark.isNotBlank()) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    ) {
+                                        Icon(Icons.Default.NearMe, null, tint = AccentSky, modifier = Modifier.size(13.dp))
+                                        Text(
+                                            text = "Near ${addr.landmark}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = AccentSky,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+
+                                // Reach instructions
+                                if (addr.reachInstructions.isNotBlank()) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    ) {
+                                        Icon(Icons.Default.Directions, null, tint = TextMuted, modifier = Modifier.size(13.dp))
+                                        Text(
+                                            text = "Instructions: ${addr.reachInstructions}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = TextSecondary
+                                        )
+                                    }
+                                }
 
                                 if (!addr.isDefault) {
                                     TextButton(
                                         onClick = { repository.setDefaultAddress(addr.id) },
-                                        contentPadding = PaddingValues(0.dp)
+                                        contentPadding = PaddingValues(0.dp),
+                                        modifier = Modifier.padding(top = 4.dp)
                                     ) {
                                         Text("Set as Default", fontSize = 12.sp, color = PrimaryBlue)
                                     }
