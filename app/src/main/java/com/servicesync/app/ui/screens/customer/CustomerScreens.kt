@@ -44,6 +44,7 @@ fun CustomerHomeScreen(
     onOpenWallet: () -> Unit,
     onOpenHelp: () -> Unit,
     onOpenAddresses: () -> Unit,
+    onOpenSettings: () -> Unit = {},
     onAddProviderClick: () -> Unit,
     onLogoutClick: () -> Unit = {},
     onBookingSelected: (Booking) -> Unit = {}
@@ -304,6 +305,17 @@ fun CustomerHomeScreen(
                         onAddProviderClick()
                     },
                     icon = { Icon(Icons.Default.PersonAdd, contentDescription = null, tint = PrimaryBlue) },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                )
+
+                NavigationDrawerItem(
+                    label = { Text("Settings", fontWeight = FontWeight.SemiBold) },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        onOpenSettings()
+                    },
+                    icon = { Icon(Icons.Default.Settings, contentDescription = null, tint = PrimaryBlue) },
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
                 )
 

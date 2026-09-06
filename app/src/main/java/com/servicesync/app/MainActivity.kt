@@ -46,8 +46,11 @@ class MainActivity : ComponentActivity() {
         val initialNavTarget = intent?.getStringExtra("EXTRA_NAV_TARGET")
 
         setContent {
-            ServiceSyncTheme {
-                MainAppHost(initialNavTarget = initialNavTarget)
+            val repository = remember { ServiceSyncRepository.getInstance(applicationContext) }
+            val themeMode by repository.themeMode.collectAsState()
+
+            ServiceSyncTheme(themeMode = themeMode) {
+                MainAppHost(initialNavTarget = initialNavTarget, repository = repository)
             }
         }
     }
@@ -56,6 +59,8 @@ class MainActivity : ComponentActivity() {
 sealed class Screen {
     object Splash : Screen()
     object Auth : Screen()
+    object AddressSetup : Screen()
+    object Settings : Screen()
     object CustomerHome : Screen()
     data class ProviderList(val category: ServiceCategory) : Screen()
     data class ProviderDetail(val provider: ServiceProvider) : Screen()
@@ -70,9 +75,8 @@ sealed class Screen {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainAppHost(initialNavTarget: String?) {
+fun MainAppHost(initialNavTarget: String?, repository: ServiceSyncRepository) {
     val context = LocalContext.current
-    val repository = remember { ServiceSyncRepository.getInstance(context) }
     val notifications by repository.notifications.collectAsState()
     val isLoggedIn by repository.isLoggedIn.collectAsState()
 
@@ -153,6 +157,18 @@ fun MainAppHost(initialNavTarget: String?) {
                         repository = repository,
                         onAuthSuccess = {
                             currentScreen = Screen.CustomerHome
+                        },
+                        onRegisteredNeedAddress = {
+                            currentScreen = Screen.AddressSetup
+                        }
+                    )
+                }
+
+                is Screen.AddressSetup -> {
+                    AddressSetupScreen(
+                        repository = repository,
+                        onAddressSaved = {
+                            currentScreen = Screen.CustomerHome
                         }
                     )
                 }
@@ -183,6 +199,9 @@ fun MainAppHost(initialNavTarget: String?) {
                         },
                         onOpenAddresses = {
                             currentScreen = Screen.ManageAddresses
+                        },
+                        onOpenSettings = {
+                            currentScreen = Screen.Settings
                         },
                         onAddProviderClick = {
                             addProviderCategory = null
@@ -275,6 +294,13 @@ fun MainAppHost(initialNavTarget: String?) {
                         onBackClick = { currentScreen = Screen.CustomerHome }
                     )
                 }
+
+                is Screen.Settings -> {
+                    SettingsScreen(
+                        repository = repository,
+                        onBackClick = { currentScreen = Screen.CustomerHome }
+                    )
+                }
             }
         }
     }
@@ -285,7 +311,7 @@ fun SplashScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundLight),
+            .background(Color(0xFF000000)),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -293,7 +319,7 @@ fun SplashScreen() {
             verticalArrangement = Arrangement.spacedBy(20.dp),
             modifier = Modifier.padding(24.dp)
         ) {
-            // Original Official SaServe Logo (Transparent background)
+            // Original Official SaServe Logo (Transparent background on pitch black)
             Image(
                 painter = painterResource(id = R.drawable.saserve_original_logo),
                 contentDescription = "SaServe Logo",
@@ -304,7 +330,7 @@ fun SplashScreen() {
             Text(
                 text = "Specialist Home Services at Your Doorstep",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
+                color = Color(0xFFCBD5E1),
                 fontWeight = FontWeight.Medium
             )
 

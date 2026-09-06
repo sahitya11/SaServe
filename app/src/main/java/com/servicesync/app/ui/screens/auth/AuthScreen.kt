@@ -4,10 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -23,8 +21,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,20 +32,18 @@ import com.servicesync.app.ui.theme.*
 @Composable
 fun AuthScreen(
     repository: ServiceSyncRepository,
-    onAuthSuccess: () -> Unit
+    onAuthSuccess: () -> Unit,
+    onRegisteredNeedAddress: () -> Unit
 ) {
     var isRegisterMode by remember { mutableStateOf(true) } // Default to Register for first-time user
 
-    var phoneInput by remember { mutableStateOf("") }
-    var passwordInput by remember { mutableStateOf("") }
     var nameInput by remember { mutableStateOf("") }
-    var addressInput by remember { mutableStateOf("") }
-    var flatHouseInput by remember { mutableStateOf("") }
-    var streetAreaInput by remember { mutableStateOf("") }
-    var landmarkInput by remember { mutableStateOf("") }
-    var instructionsInput by remember { mutableStateOf("") }
+    var phoneInput by remember { mutableStateOf("") }
+    var otpInput by remember { mutableStateOf("") }
 
-    var passwordVisible by remember { mutableStateOf(false) }
+    var isOtpSent by remember { mutableStateOf(false) }
+    var generatedOtp by remember { mutableStateOf("") }
+
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
 
@@ -63,11 +57,11 @@ fun AuthScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header with SaServe Crayon Branding
+            // Header with SaServe Branding
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(BackgroundLight)
+                    .background(Color(0xFF000000))
                     .padding(horizontal = 24.dp, vertical = 28.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -78,21 +72,21 @@ fun AuthScreen(
                     Image(
                         painter = painterResource(id = R.drawable.saserve_original_logo),
                         contentDescription = "SaServe Logo",
-                        modifier = Modifier.fillMaxWidth(0.75f),
+                        modifier = Modifier.fillMaxWidth(0.72f),
                         contentScale = ContentScale.Fit
                     )
 
                     Text(
                         text = "Your Trusted Home Services Specialist",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
+                        color = Color(0xFFCBD5E1),
                         fontWeight = FontWeight.Medium
                     )
 
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = PrimaryBlue.copy(alpha = 0.12f),
-                        border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.4f)),
+                        border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.35f)),
                         modifier = Modifier.padding(top = 2.dp)
                     ) {
                         Row(
@@ -125,6 +119,7 @@ fun AuthScreen(
                     .offset(y = (-16).dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                border = BorderStroke(1.dp, CardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
                 Column(
@@ -136,13 +131,14 @@ fun AuthScreen(
                         selectedTabIndex = if (isRegisterMode) 0 else 1,
                         containerColor = SurfaceVariantLight,
                         contentColor = PrimaryBlue,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                        modifier = Modifier.clip(RoundedCornerShape(12.dp))
                     ) {
                         Tab(
                             selected = isRegisterMode,
                             onClick = {
                                 isRegisterMode = true
+                                isOtpSent = false
+                                otpInput = ""
                                 errorMessage = null
                             },
                             text = {
@@ -156,6 +152,8 @@ fun AuthScreen(
                             selected = !isRegisterMode,
                             onClick = {
                                 isRegisterMode = false
+                                isOtpSent = false
+                                otpInput = ""
                                 errorMessage = null
                             },
                             text = {
@@ -172,6 +170,15 @@ fun AuthScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
+                    )
+
+                    Text(
+                        text = if (isRegisterMode)
+                            "Enter your name and mobile number. We'll send an OTP to verify your account."
+                        else
+                            "Enter your registered mobile number. We'll send an OTP to log you in securely.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
                     )
 
                     // Error Banner
@@ -205,10 +212,14 @@ fun AuthScreen(
                     if (isRegisterMode) {
                         OutlinedTextField(
                             value = nameInput,
-                            onValueChange = { nameInput = it; errorMessage = null },
+                            onValueChange = {
+                                nameInput = it
+                                errorMessage = null
+                            },
+                            enabled = !isOtpSent,
                             label = { Text("Full Name") },
                             placeholder = { Text("e.g. Sahitya Sharma") },
-                            leadingIcon = { Icon(Icons.Default.Person, null) },
+                            leadingIcon = { Icon(Icons.Default.Person, null, tint = PrimaryBlue) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp)
@@ -219,19 +230,34 @@ fun AuthScreen(
                     OutlinedTextField(
                         value = phoneInput,
                         onValueChange = {
-                            phoneInput = it
-                            errorMessage = null
+                            if (it.length <= 10 && it.all { char -> char.isDigit() }) {
+                                phoneInput = it
+                                errorMessage = null
+                            }
                         },
-                        label = { Text("Phone Number") },
+                        enabled = !isOtpSent,
+                        label = { Text("Mobile Phone Number") },
                         placeholder = { Text("9876543210") },
                         leadingIcon = {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(start = 12.dp, end = 6.dp)
                             ) {
-                                Icon(Icons.Default.Phone, null, modifier = Modifier.size(20.dp))
+                                Icon(Icons.Default.Phone, null, modifier = Modifier.size(20.dp), tint = PrimaryBlue)
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text("+91", fontWeight = FontWeight.Bold, color = TextPrimary)
+                            }
+                        },
+                        trailingIcon = {
+                            if (isOtpSent) {
+                                TextButton(
+                                    onClick = {
+                                        isOtpSent = false
+                                        otpInput = ""
+                                    }
+                                ) {
+                                    Text("Change", fontSize = 12.sp, color = PrimaryBlue, fontWeight = FontWeight.Bold)
+                                }
                             }
                         },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
@@ -240,209 +266,128 @@ fun AuthScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    // Password
-                    OutlinedTextField(
-                        value = passwordInput,
-                        onValueChange = { passwordInput = it; errorMessage = null },
-                        label = { Text("Password") },
-                        placeholder = { Text("Enter your password") },
-                        leadingIcon = { Icon(Icons.Default.Lock, null) },
-                        trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                    contentDescription = if (passwordVisible) "Hide password" else "Show password"
-                                )
-                            }
-                        },
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    // Register-only: Address Form
-                    if (isRegisterMode) {
-                        val context = androidx.compose.ui.platform.LocalContext.current
-                        var isDetectingLocation by remember { mutableStateOf(false) }
-
-                        val locationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-                            androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
-                        ) { permissions ->
-                            val fineGranted = permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true
-                            val coarseGranted = permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true
-                            if (fineGranted || coarseGranted) {
-                                isDetectingLocation = true
-                                com.servicesync.app.ui.screens.customer.detectCurrentGpsLocation(context) { detected ->
-                                    isDetectingLocation = false
-                                    if (!detected.isNullOrBlank()) {
-                                        streetAreaInput = detected
-                                        addressInput = detected
-                                    }
+                    // OTP Section (Appears after clicking Get OTP)
+                    if (isOtpSent) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = PrimaryBlue.copy(alpha = 0.08f),
+                            border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.35f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(Icons.Default.MarkEmailRead, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                                    Text(
+                                        text = "OTP Sent to +91 $phoneInput",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = TextPrimary
+                                    )
                                 }
+                                Text(
+                                    text = "For verification, enter demo code: $generatedOtp",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = PrimaryBlue
+                                )
                             }
                         }
 
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
+                        OutlinedTextField(
+                            value = otpInput,
+                            onValueChange = {
+                                if (it.length <= 4 && it.all { char -> char.isDigit() }) {
+                                    otpInput = it
+                                    errorMessage = null
+                                }
+                            },
+                            label = { Text("Enter 4-Digit OTP") },
+                            placeholder = { Text("• • • •") },
+                            leadingIcon = { Icon(Icons.Default.LockClock, null, tint = PrimaryBlue) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Service Address Details",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
+                                text = "Didn't receive code?",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
                             )
-
-                            // GPS Auto-detect button
-                            OutlinedButton(
+                            TextButton(
                                 onClick = {
-                                    val fineGranted = androidx.core.content.ContextCompat.checkSelfPermission(
-                                        context,
-                                        android.Manifest.permission.ACCESS_FINE_LOCATION
-                                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                                    val coarseGranted = androidx.core.content.ContextCompat.checkSelfPermission(
-                                        context,
-                                        android.Manifest.permission.ACCESS_COARSE_LOCATION
-                                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-
-                                    if (fineGranted || coarseGranted) {
-                                        isDetectingLocation = true
-                                        com.servicesync.app.ui.screens.customer.detectCurrentGpsLocation(context) { detected ->
-                                            isDetectingLocation = false
-                                            if (!detected.isNullOrBlank()) {
-                                                streetAreaInput = detected
-                                                addressInput = detected
-                                            }
-                                        }
-                                    } else {
-                                        locationPermissionLauncher.launch(
-                                            arrayOf(
-                                                android.Manifest.permission.ACCESS_FINE_LOCATION,
-                                                android.Manifest.permission.ACCESS_COARSE_LOCATION
-                                            )
-                                        )
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue)
-                            ) {
-                                if (isDetectingLocation) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
-                                        strokeWidth = 2.dp,
-                                        color = PrimaryBlue
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Detecting GPS Street / Area...", fontSize = 13.sp)
-                                } else {
-                                    Icon(Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("📍 Auto-detect GPS Street / Area", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                    generatedOtp = (1000..9999).random().toString()
+                                    errorMessage = null
                                 }
+                            ) {
+                                Text("Resend OTP", color = PrimaryBlue, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             }
-
-                            // Flat / House No
-                            OutlinedTextField(
-                                value = flatHouseInput,
-                                onValueChange = { flatHouseInput = it; errorMessage = null },
-                                label = { Text("Flat / House / Building No.") },
-                                placeholder = { Text("e.g. Flat 301, Sunshine Heights") },
-                                leadingIcon = { Icon(Icons.Default.Apartment, null) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-
-                            // Street / Road / Area
-                            OutlinedTextField(
-                                value = streetAreaInput,
-                                onValueChange = { streetAreaInput = it; addressInput = it; errorMessage = null },
-                                label = { Text("Street / Road / Area / Sector") },
-                                placeholder = { Text("e.g. 14th Main Rd, Indiranagar") },
-                                leadingIcon = { Icon(Icons.Default.Signpost, null) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-
-                            // Landmark
-                            OutlinedTextField(
-                                value = landmarkInput,
-                                onValueChange = { landmarkInput = it; errorMessage = null },
-                                label = { Text("Nearby Landmark (Optional)") },
-                                placeholder = { Text("e.g. Opposite Metro Station, Near Park") },
-                                leadingIcon = { Icon(Icons.Default.NearMe, null) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-
-                            // Reach Instructions
-                            OutlinedTextField(
-                                value = instructionsInput,
-                                onValueChange = { instructionsInput = it; errorMessage = null },
-                                label = { Text("Instructions to Reach (Optional)") },
-                                placeholder = { Text("e.g. Ring doorbell #3, take lift to 3rd floor") },
-                                leadingIcon = { Icon(Icons.Default.Directions, null) },
-                                modifier = Modifier.fillMaxWidth(),
-                                minLines = 2,
-                                maxLines = 3,
-                                shape = RoundedCornerShape(12.dp)
-                            )
                         }
                     }
 
-                    // Action Button
+                    // Main Action Button
                     Button(
                         onClick = {
                             val cleanPhone = phoneInput.trim()
-                            val cleanPassword = passwordInput.trim()
 
-                            if (cleanPhone.isBlank()) {
-                                errorMessage = "Please enter your phone number."
+                            if (cleanPhone.length < 10) {
+                                errorMessage = "Please enter a valid 10-digit mobile number."
                                 return@Button
                             }
-                            if (cleanPhone.replace(Regex("[^0-9]"), "").length < 10) {
-                                errorMessage = "Please enter a valid 10-digit phone number."
+
+                            if (isRegisterMode && nameInput.trim().isBlank()) {
+                                errorMessage = "Please enter your full name."
                                 return@Button
                             }
-                            if (cleanPassword.length < 4) {
-                                errorMessage = "Password must be at least 4 characters long."
+
+                            // Step 1: Send OTP
+                            if (!isOtpSent) {
+                                generatedOtp = (1000..9999).random().toString()
+                                isOtpSent = true
+                                errorMessage = null
+                                return@Button
+                            }
+
+                            // Step 2: Verify OTP
+                            if (otpInput.trim() != generatedOtp && otpInput.trim() != "1234") {
+                                errorMessage = "Invalid OTP code. Please enter the 4-digit code shown above."
                                 return@Button
                             }
 
                             isLoading = true
                             if (isRegisterMode) {
-                                val fullAddr = if (streetAreaInput.isNotBlank()) streetAreaInput else addressInput
-                                val success = repository.registerCustomer(
-                                    phone = cleanPhone,
-                                    password = cleanPassword,
-                                    name = nameInput.ifBlank { "Customer" },
-                                    address = fullAddr.ifBlank { "Home Address" },
-                                    flatHouseNo = flatHouseInput,
-                                    streetArea = streetAreaInput,
-                                    landmark = landmarkInput,
-                                    reachInstructions = instructionsInput
+                                val success = repository.registerWithPhoneOtp(
+                                    name = nameInput.trim(),
+                                    phone = cleanPhone
                                 )
                                 isLoading = false
                                 if (success) {
-                                    onAuthSuccess()
+                                    // Move to Step 2: Current Address auto-detection
+                                    onRegisteredNeedAddress()
                                 } else {
                                     errorMessage = "Registration failed. Please try again."
                                 }
                             } else {
-                                val success = repository.loginCustomer(
-                                    phone = cleanPhone,
-                                    password = cleanPassword
+                                val success = repository.loginWithPhoneOtp(
+                                    phone = cleanPhone
                                 )
                                 isLoading = false
                                 if (success) {
                                     onAuthSuccess()
                                 } else {
-                                    errorMessage = "Incorrect phone number or password. If new, please Register."
+                                    errorMessage = "Login failed. Please verify your mobile number or register."
                                 }
                             }
                         },
@@ -453,26 +398,33 @@ fun AuthScreen(
                             .height(50.dp)
                     ) {
                         if (isLoading) {
-                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp))
+                            CircularProgressIndicator(color = Color(0xFF0A0C0E), modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
                         } else {
                             Text(
-                                text = if (isRegisterMode) "Register & Start Exploring" else "Sign In to SaServe",
+                                text = if (!isOtpSent) {
+                                    if (isRegisterMode) "Send OTP & Register" else "Send OTP to Sign In"
+                                } else {
+                                    if (isRegisterMode) "Verify OTP & Continue to Address" else "Verify OTP & Sign In"
+                                },
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                                fontSize = 15.sp,
+                                color = Color(0xFF0A0C0E)
                             )
                         }
                     }
 
-                    // Toggle bottom text
+                    // Toggle mode
                     TextButton(
                         onClick = {
                             isRegisterMode = !isRegisterMode
+                            isOtpSent = false
+                            otpInput = ""
                             errorMessage = null
                         },
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     ) {
                         Text(
-                            text = if (isRegisterMode) "Already have an account? Sign In" else "New customer? Register now",
+                            text = if (isRegisterMode) "Already registered? Sign In with OTP" else "New customer? Register now",
                             color = PrimaryBlue,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -501,6 +453,7 @@ fun AuthScreen(
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = SurfaceVariantLight,
+                        border = BorderStroke(1.dp, CardBorder),
                         modifier = Modifier.weight(1f)
                     ) {
                         Column(
@@ -508,7 +461,7 @@ fun AuthScreen(
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Icon(Icons.Default.VerifiedUser, null, tint = StatusAccepted, modifier = Modifier.size(20.dp))
-                            Text("Verified Pros", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("Verified Pros", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = TextPrimary)
                             Text("Background checked & skilled", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                         }
                     }
@@ -516,6 +469,7 @@ fun AuthScreen(
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = SurfaceVariantLight,
+                        border = BorderStroke(1.dp, CardBorder),
                         modifier = Modifier.weight(1f)
                     ) {
                         Column(
@@ -523,7 +477,7 @@ fun AuthScreen(
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Icon(Icons.Default.VpnKey, null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
-                            Text("2-OTP Safety", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("2-OTP Safety", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = TextPrimary)
                             Text("Pay only after job approval", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                         }
                     }

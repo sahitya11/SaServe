@@ -5,6 +5,12 @@ enum class UserRole {
     PROVIDER
 }
 
+enum class AppThemeMode(val title: String) {
+    SYSTEM("Follow System"),
+    LIGHT("Light Mode"),
+    DARK("Black & Cyan Mode")
+}
+
 enum class ServiceCategory(
     val displayName: String,
     val description: String,

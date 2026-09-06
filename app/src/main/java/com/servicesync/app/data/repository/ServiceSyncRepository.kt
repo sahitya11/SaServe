@@ -44,6 +44,9 @@ class ServiceSyncRepository(private val context: Context) {
     private val _savedAddresses = MutableStateFlow<List<SavedAddress>>(emptyList())
     val savedAddresses: StateFlow<List<SavedAddress>> = _savedAddresses.asStateFlow()
 
+    private val _themeMode = MutableStateFlow<AppThemeMode>(AppThemeMode.SYSTEM)
+    val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
+
     init {
         loadOrInitializeData()
     }
@@ -187,6 +190,19 @@ class ServiceSyncRepository(private val context: Context) {
             _walletTransactions.value = initialTx
             saveWallet(500.0, initialTx)
         }
+
+        // 7. Theme Mode (Default to Black & Light Theme)
+        val savedTheme = prefs.getString(KEY_THEME_MODE, AppThemeMode.DARK.name)
+        _themeMode.value = try {
+            AppThemeMode.valueOf(savedTheme ?: AppThemeMode.DARK.name)
+        } catch (e: Exception) {
+            AppThemeMode.DARK
+        }
+    }
+
+    fun setThemeMode(mode: AppThemeMode) {
+        _themeMode.value = mode
+        prefs.edit().putString(KEY_THEME_MODE, mode.name).apply()
     }
 
     private fun saveProviders(list: List<ServiceProvider>) {
@@ -307,14 +323,125 @@ class ServiceSyncRepository(private val context: Context) {
         return true
     }
 
-    fun loginCustomer(phone: String, password: String): Boolean {
-        val cleanPhone = phone.replace(Regex("[^0-9]"), "")
-        val cleanPassword = password.trim()
-        if (cleanPhone.isBlank() || cleanPassword.isBlank()) return false
+    fun registerWithPhoneOtp(name: String, phone: String): Boolean {
+        val cleanPhone = phone.replace(Regex("[^0-9]"), "").trim()
+        val cleanName = name.trim()
+        if (cleanPhone.length < 10) return false
+
+        val newUser = User(
+            id = "cust_" + UUID.randomUUID().toString().take(8),
+            name = if (cleanName.isNotBlank()) cleanName else "Customer (${cleanPhone.takeLast(4)})",
+            email = "",
+            phone = cleanPhone,
+            password = "",
+            role = UserRole.CUSTOMER,
+            address = "",
+            savedAddresses = emptyList()
+        )
+
+        val usersList = getRegisteredUsers().toMutableList()
+        val existingIndex = usersList.indexOfFirst {
+            it.phone.replace(Regex("[^0-9]"), "") == cleanPhone
+        }
+        if (existingIndex != -1) {
+            usersList[existingIndex] = newUser
+        } else {
+            usersList.add(newUser)
+        }
+        saveRegisteredUsers(usersList)
+
+        _currentUser.value = newUser
+        _savedAddresses.value = emptyList()
+        _isLoggedIn.value = true
+        saveUser(newUser)
+        prefs.edit().putString(KEY_LOGGED_IN_PHONE, cleanPhone).apply()
+
+        // Welcome notification
+        val welcomeNotif = AppNotification(
+            id = UUID.randomUUID().toString(),
+            title = "Welcome to SaServe! 🎉",
+            message = "Hello ${newUser.name}! Your account has been verified via OTP."
+        )
+        val updatedNotifs = listOf(welcomeNotif) + _notifications.value
+        _notifications.value = updatedNotifs
+        saveNotifications(updatedNotifs)
+
+        return true
+    }
+
+    fun loginWithPhoneOtp(phone: String): Boolean {
+        val cleanPhone = phone.replace(Regex("[^0-9]"), "").trim()
+        if (cleanPhone.length < 10) return false
 
         val users = getRegisteredUsers()
         val matchingUser = users.firstOrNull {
-            it.phone.replace(Regex("[^0-9]"), "") == cleanPhone && it.password == cleanPassword
+            it.phone.replace(Regex("[^0-9]"), "") == cleanPhone
+        }
+
+        val userToLogin = matchingUser ?: User(
+            id = "cust_" + UUID.randomUUID().toString().take(8),
+            name = "Customer (${cleanPhone.takeLast(4)})",
+            phone = cleanPhone,
+            role = UserRole.CUSTOMER,
+            address = "",
+            savedAddresses = emptyList()
+        )
+
+        val usersList = getRegisteredUsers().toMutableList()
+        if (matchingUser == null) {
+            usersList.add(userToLogin)
+            saveRegisteredUsers(usersList)
+        }
+
+        _currentUser.value = userToLogin
+        _savedAddresses.value = userToLogin.safeSavedAddresses
+        _isLoggedIn.value = true
+        saveUser(userToLogin)
+        prefs.edit().putString(KEY_LOGGED_IN_PHONE, cleanPhone).apply()
+        return true
+    }
+
+    fun updateUserAddress(
+        flatHouseNo: String,
+        streetArea: String,
+        landmark: String,
+        reachInstructions: String,
+        isDefault: Boolean = true
+    ) {
+        val currentUser = _currentUser.value ?: return
+        val newAddress = SavedAddress(
+            id = "addr_" + UUID.randomUUID().toString().take(6),
+            label = "Home",
+            addressLine = if (streetArea.isNotBlank()) streetArea else "Home Address",
+            flatHouseNo = flatHouseNo.trim(),
+            streetArea = streetArea.trim(),
+            landmark = landmark.trim(),
+            reachInstructions = reachInstructions.trim(),
+            isDefault = isDefault
+        )
+
+        val updatedList = listOf(newAddress) + _savedAddresses.value.filter { it.id != newAddress.id }
+        _savedAddresses.value = updatedList
+
+        val updatedUser = currentUser.copy(
+            address = newAddress.formattedDisplayAddress,
+            savedAddresses = updatedList
+        )
+        _currentUser.value = updatedUser
+        saveUser(updatedUser)
+
+        val registered = getRegisteredUsers().map { if (it.id == updatedUser.id) updatedUser else it }
+        saveRegisteredUsers(registered)
+    }
+
+    fun loginCustomer(phone: String, password: String): Boolean {
+        val cleanPhone = phone.replace(Regex("[^0-9]"), "")
+        val cleanPassword = password.trim()
+        if (cleanPhone.isBlank()) return false
+
+        val users = getRegisteredUsers()
+        val matchingUser = users.firstOrNull {
+            it.phone.replace(Regex("[^0-9]"), "") == cleanPhone && (it.password.isBlank() || it.password == cleanPassword)
         }
 
         if (matchingUser != null) {
@@ -886,6 +1013,7 @@ class ServiceSyncRepository(private val context: Context) {
         private const val KEY_DISMISSED_HOME_BOOKINGS = "key_dismissed_home_bookings_v1"
         private const val KEY_WALLET_BALANCE = "key_wallet_balance_v1"
         private const val KEY_WALLET_TRANSACTIONS = "key_wallet_transactions_v1"
+        private const val KEY_THEME_MODE = "key_theme_mode_v1"
 
         @Volatile
         private var INSTANCE: ServiceSyncRepository? = null

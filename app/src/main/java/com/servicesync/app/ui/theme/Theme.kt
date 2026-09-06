@@ -11,34 +11,63 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+import com.servicesync.app.data.model.AppThemeMode
+
 private val DarkColorScheme = lightColorScheme(
     primary = PrimaryBlue,
-    onPrimary = Color(0xFF0A0C0E), // High contrast dark text on vibrant cyan
+    onPrimary = Color(0xFF000000),
     primaryContainer = Color(0xFF132A38),
     onPrimaryContainer = PrimaryBlue,
     secondary = SecondaryTeal,
-    onSecondary = Color(0xFF0A0C0E),
+    onSecondary = Color(0xFF000000),
     tertiary = AccentSky,
-    background = BackgroundLight,
-    surface = SurfaceLight,
-    onBackground = TextPrimary,
-    onSurface = TextPrimary,
-    surfaceVariant = SurfaceVariantLight,
-    onSurfaceVariant = TextSecondary
+    background = DarkBackground,
+    surface = DarkSurface,
+    onBackground = DarkTextPrimary,
+    onSurface = DarkTextPrimary,
+    surfaceVariant = DarkSurfaceVariant,
+    onSurfaceVariant = DarkTextSecondary,
+    outline = DarkTextMuted,
+    outlineVariant = DarkCardBorder
+)
+
+private val LightColorScheme = lightColorScheme(
+    primary = PrimaryBlueDark,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFE0F7FA),
+    onPrimaryContainer = PrimaryBlueDark,
+    secondary = SecondaryTeal,
+    onSecondary = Color.White,
+    tertiary = AccentSky,
+    background = LightBackground,
+    surface = LightSurface,
+    onBackground = LightTextPrimary,
+    onSurface = LightTextPrimary,
+    surfaceVariant = LightSurfaceVariant,
+    onSurfaceVariant = LightTextSecondary,
+    outline = LightTextMuted,
+    outlineVariant = LightCardBorder
 )
 
 @Composable
 fun ServiceSyncTheme(
+    themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = DarkColorScheme
+    val isDark = when (themeMode) {
+        AppThemeMode.SYSTEM -> darkTheme
+        AppThemeMode.LIGHT -> false
+        AppThemeMode.DARK -> true
+    }
+
+    val colorScheme = if (isDark) DarkColorScheme else LightColorScheme
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = BackgroundLight.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+            window.statusBarColor = colorScheme.background.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isDark
         }
     }
 
