@@ -636,6 +636,103 @@ class ServiceSyncRepository(private val context: Context) {
     }
 
     /**
+     * Updates the current customer's profile info.
+     */
+    fun updateUserProfile(name: String, phone: String, email: String, address: String) {
+        val user = _currentUser.value ?: return
+        val updated = user.copy(
+            name = name.trim().ifBlank { user.name },
+            phone = phone.trim().ifBlank { user.phone },
+            email = email.trim(),
+            address = address.trim().ifBlank { user.address }
+        )
+        _currentUser.value = updated
+        saveUser(updated)
+        val registered = getRegisteredUsers().map { if (it.id == updated.id) updated else it }
+        saveRegisteredUsers(registered)
+    }
+
+    /**
+     * Ola/Uber-style on-demand service broadcast dispatch.
+     * Broadcasts request to eligible verified specialists in the category,
+     * simulates real-time acceptance, and assigns the specialist automatically.
+     */
+    suspend fun broadcastServiceDispatch(
+        category: ServiceCategory,
+        date: String,
+        timeSlot: String,
+        address: String,
+        issueDescription: String
+    ): Booking {
+        val user = _currentUser.value
+        val startOtp = ((1000..9999).random()).toString()
+        val completionOtp = ((1000..9999).random()).toString()
+
+        // Match existing provider or dynamically assign certified specialist
+        val matchedProvider = _providers.value.firstOrNull { it.category == category && it.isAvailable }
+            ?: run {
+                val mockName = when (category) {
+                    ServiceCategory.ELECTRICIAN -> "Ramesh Verma"
+                    ServiceCategory.PLUMBER -> "Sunil Kumar"
+                    ServiceCategory.CARPENTER -> "Mohan Lal"
+                    ServiceCategory.MECHANIC -> "Vikram Singh"
+                    ServiceCategory.APPLIANCE_REPAIR -> "Amit Saini"
+                    ServiceCategory.PAINTER -> "Rajesh Patel"
+                }
+                addServiceProvider(
+                    name = mockName,
+                    phone = "+91 98${(10000000..99999999).random()}",
+                    email = "${mockName.lowercase().replace(" ", "")}@saserve.com",
+                    category = category,
+                    hourlyRate = 399.0,
+                    experienceYears = 6,
+                    bio = "Certified SaServe ${category.displayName} specialist. Equipped with verified tools.",
+                    location = "Nearby Specialist (1.2 km away)",
+                    rating = 4.9f
+                )
+            }
+
+        val booking = Booking(
+            id = "bk_" + UUID.randomUUID().toString().take(8),
+            customerId = user?.id ?: "cust_user",
+            customerName = user?.name ?: "Customer User",
+            customerPhone = user?.phone ?: "+91 98765 43210",
+            customerAddress = if (address.isNotBlank()) address else (user?.address ?: "Current Location"),
+            providerId = matchedProvider.id,
+            providerName = matchedProvider.name,
+            providerPhone = matchedProvider.phone,
+            category = category,
+            scheduledDate = date,
+            scheduledSlot = timeSlot,
+            issueDescription = if (issueDescription.isNotBlank()) issueDescription else "On-demand ${category.displayName} service",
+            status = BookingStatus.PENDING,
+            hourlyRate = matchedProvider.hourlyRate,
+            startOtp = startOtp,
+            completionOtp = completionOtp
+        )
+
+        val updatedBookings = listOf(booking) + _bookings.value
+        _bookings.value = updatedBookings
+        saveBookings(updatedBookings)
+
+        // Notification: Broadcast initiated
+        val newNotif = AppNotification(
+            id = UUID.randomUUID().toString(),
+            title = "Searching Nearby Specialists 📡",
+            message = "Broadcasting your ${category.displayName} request to nearby specialists...",
+            bookingId = booking.id
+        )
+        _notifications.value = listOf(newNotif) + _notifications.value
+        saveNotifications(_notifications.value)
+
+        // Real-time acceptance delay (Ola/Uber ride match simulation)
+        kotlinx.coroutines.delay(2600)
+        acceptBooking(booking.id)
+
+        return _bookings.value.firstOrNull { it.id == booking.id } ?: booking.copy(status = BookingStatus.ACCEPTED)
+    }
+
+    /**
      * Simulates or executes provider acceptance for a booking.
      * Triggers the Android system push notification and updates customer's booking status to ACCEPTED.
      */

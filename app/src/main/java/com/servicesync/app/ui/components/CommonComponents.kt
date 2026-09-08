@@ -193,7 +193,7 @@ fun ProviderCard(
                 ) {
                     Text(
                         text = provider.name.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString(""),
-                        color = Color(0xFF0A0C0E),
+                        color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )

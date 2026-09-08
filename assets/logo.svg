@@ -33,9 +33,9 @@
     <circle cx="0" cy="95" r="7" fill="#06b6d4" />
   </g>
 
-  <!-- Typography -->
-  <text x="250" y="380" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="44" font-weight="800" fill="#ffffff" letter-spacing="1">
-    SaServe
+  <!-- Typography: "Sa" in Blue #2563eb, "Serve" in White #ffffff -->
+  <text x="250" y="380" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="44" font-weight="800" letter-spacing="1">
+    <tspan fill="#2563eb">Sa</tspan><tspan fill="#ffffff">Serve</tspan>
   </text>
   <text x="250" y="415" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="14" font-weight="600" fill="#06b6d4" letter-spacing="2" text-transform="uppercase">
     Connecting You with Trusted Services

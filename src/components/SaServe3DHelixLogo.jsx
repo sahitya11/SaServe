@@ -227,8 +227,8 @@ export default function SaServe3DHelixLogo({
       {/* Brand Typography */}
       {isShowText && (
         <div className="flex flex-col justify-center">
-          <span className="text-2xl font-black tracking-tight text-white font-sans leading-tight">
-            Sa<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-300">Serve</span>
+          <span className="text-2xl font-black tracking-tight font-sans leading-tight">
+            <span className="text-[#2563eb]">Sa</span><span className="text-white">Serve</span>
           </span>
           <span className="text-[10px] font-semibold uppercase tracking-wider text-cyan-400/90 mt-0.5">
             Connecting You with Trusted Services

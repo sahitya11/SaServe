@@ -63,6 +63,11 @@ fun CustomerHomeScreen(
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") }
+    var showProfileDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
+    var showDispatchDialog by remember { mutableStateOf(false) }
+    var dispatchCategory by remember { mutableStateOf(ServiceCategory.ELECTRICIAN) }
+    val currentThemeMode by repository.themeMode.collectAsState()
 
     val unreadNotifCount = notifications.count { !it.isRead }
     val activeBookingsCount = bookings.count {
@@ -103,44 +108,69 @@ fun CustomerHomeScreen(
                 drawerContainerColor = SurfaceLight,
                 modifier = Modifier.width(310.dp)
             ) {
-                // Drawer Header
+                // Drawer Header with adaptive background for perfect contrast in both Light & Dark modes
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFF13171F))
-                        .padding(horizontal = 20.dp, vertical = 24.dp)
+                        .background(SurfaceVariantLight)
+                        .padding(horizontal = 20.dp, vertical = 22.dp)
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(PrimaryBlue),
-                                contentAlignment = Alignment.Center
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = null,
-                                    tint = Color(0xFF0A0C0E),
-                                    modifier = Modifier.size(28.dp)
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape)
+                                        .background(PrimaryBlue),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Text(
+                                        text = currentUser?.name?.ifBlank { "Customer" } ?: "Customer",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimary
+                                    )
+                                    Text(
+                                        text = currentUser?.phone?.ifBlank { "+91 Registered User" } ?: "+91 User",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = TextSecondary
+                                    )
+                                }
                             }
 
-                            Column {
-                                Text(
-                                    text = currentUser?.name?.ifBlank { "Customer" } ?: "Customer",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
-                                )
-                                Text(
-                                    text = currentUser?.phone?.ifBlank { "+91 Registered User" } ?: "+91 User",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = TextSecondary
+                            // Quick Edit Profile button in header
+                            IconButton(
+                                onClick = {
+                                    coroutineScope.launch { drawerState.close() }
+                                    showProfileDialog = true
+                                },
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(PrimaryBlue.copy(alpha = 0.12f), CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit Profile",
+                                    tint = PrimaryBlue,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         }
@@ -188,9 +218,33 @@ fun CustomerHomeScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // Navigation Items
+                // Navigation Items - My Profile first
+                NavigationDrawerItem(
+                    label = { Text("My Profile", fontWeight = FontWeight.SemiBold) },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        showProfileDialog = true
+                    },
+                    icon = { Icon(Icons.Default.AccountCircle, contentDescription = null, tint = PrimaryBlue) },
+                    badge = {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = PrimaryBlue.copy(alpha = 0.15f)
+                        ) {
+                            Text(
+                                text = "Edit",
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = PrimaryBlue,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                )
                 NavigationDrawerItem(
                     label = { Text("My Bookings", fontWeight = FontWeight.SemiBold) },
                     selected = false,
@@ -316,6 +370,35 @@ fun CustomerHomeScreen(
                         onOpenSettings()
                     },
                     icon = { Icon(Icons.Default.Settings, contentDescription = null, tint = PrimaryBlue) },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                )
+
+                NavigationDrawerItem(
+                    label = { Text("App Theme", fontWeight = FontWeight.SemiBold) },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        showThemeDialog = true
+                    },
+                    icon = { Icon(Icons.Default.Palette, contentDescription = null, tint = PrimaryBlue) },
+                    badge = {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = PrimaryBlue.copy(alpha = 0.15f)
+                        ) {
+                            Text(
+                                text = when (currentThemeMode) {
+                                    AppThemeMode.DARK -> "Dark"
+                                    AppThemeMode.LIGHT -> "Light"
+                                    AppThemeMode.SYSTEM -> "System"
+                                },
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = PrimaryBlue,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    },
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
                 )
 
@@ -565,6 +648,42 @@ fun CustomerHomeScreen(
                 )
             }
 
+            // Quick Service Filters (using vibrant brand blue PrimaryBlue #2563EB)
+            item {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    val filterOptions = listOf("All", "Top Rated (4.9+)", "Available Now", "Instant Dispatch")
+                    items(filterOptions) { filter ->
+                        val isSelected = selectedFilter == filter
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { selectedFilter = filter },
+                            label = {
+                                Text(
+                                    text = filter,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = SurfaceLight,
+                                labelColor = TextPrimary,
+                                selectedContainerColor = PrimaryBlue,
+                                selectedLabelColor = Color.White
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = isSelected,
+                                borderColor = CardBorder,
+                                selectedBorderColor = PrimaryBlue
+                            ),
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                    }
+                }
+            }
+
             // Promotional Highlights & Security Carousel
             item {
                 LazyRow(
@@ -673,17 +792,26 @@ fun CustomerHomeScreen(
                         CategoryGridItem(
                             category = ServiceCategory.ELECTRICIAN,
                             modifier = Modifier.weight(1f),
-                            onClick = { onCategorySelected(ServiceCategory.ELECTRICIAN) }
+                            onClick = {
+                                dispatchCategory = ServiceCategory.ELECTRICIAN
+                                showDispatchDialog = true
+                            }
                         )
                         CategoryGridItem(
                             category = ServiceCategory.PLUMBER,
                             modifier = Modifier.weight(1f),
-                            onClick = { onCategorySelected(ServiceCategory.PLUMBER) }
+                            onClick = {
+                                dispatchCategory = ServiceCategory.PLUMBER
+                                showDispatchDialog = true
+                            }
                         )
                         CategoryGridItem(
                             category = ServiceCategory.CARPENTER,
                             modifier = Modifier.weight(1f),
-                            onClick = { onCategorySelected(ServiceCategory.CARPENTER) }
+                            onClick = {
+                                dispatchCategory = ServiceCategory.CARPENTER
+                                showDispatchDialog = true
+                            }
                         )
                     }
 
@@ -694,143 +822,700 @@ fun CustomerHomeScreen(
                         CategoryGridItem(
                             category = ServiceCategory.MECHANIC,
                             modifier = Modifier.weight(1f),
-                            onClick = { onCategorySelected(ServiceCategory.MECHANIC) }
+                            onClick = {
+                                dispatchCategory = ServiceCategory.MECHANIC
+                                showDispatchDialog = true
+                            }
                         )
                         CategoryGridItem(
                             category = ServiceCategory.APPLIANCE_REPAIR,
                             modifier = Modifier.weight(1f),
-                            onClick = { onCategorySelected(ServiceCategory.APPLIANCE_REPAIR) }
+                            onClick = {
+                                dispatchCategory = ServiceCategory.APPLIANCE_REPAIR
+                                showDispatchDialog = true
+                            }
                         )
                         CategoryGridItem(
                             category = ServiceCategory.PAINTER,
                             modifier = Modifier.weight(1f),
-                            onClick = { onCategorySelected(ServiceCategory.PAINTER) }
+                            onClick = {
+                                dispatchCategory = ServiceCategory.PAINTER
+                                showDispatchDialog = true
+                            }
                         )
                     }
                 }
             }
 
-            // Quick Filter Chips
-            if (providers.isNotEmpty()) {
-                item {
-                    val filters = listOf("All", "Top Rated (4.9+)", "Budget (< ₹400)", "Available Now")
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(filters) { filter ->
-                            FilterChip(
-                                selected = selectedFilter == filter,
-                                onClick = { selectedFilter = filter },
-                                label = { Text(filter) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = PrimaryBlue,
-                                    selectedLabelColor = Color(0xFF0A0C0E)
-                                )
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Available Service Providers Section Header
+            // On-Demand Ola/Uber Style Dispatch Hub
             item {
-                Row(
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                    border = BorderStroke(1.5.dp, PrimaryBlue.copy(alpha = 0.4f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    Text(
-                        text = "Your Service Providers",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
-                    Text(
-                        text = "${filteredProviders.size} added",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
-                    )
-                }
-            }
-
-            // Providers List or Empty State
-            if (providers.isEmpty()) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(28.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(64.dp)
+                                    .size(42.dp)
                                     .clip(CircleShape)
-                                    .background(StatusAcceptedBg),
+                                    .background(PrimaryBlue.copy(alpha = 0.15f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.PersonAdd,
+                                    Icons.Default.NearMe,
                                     contentDescription = null,
                                     tint = PrimaryBlue,
-                                    modifier = Modifier.size(34.dp)
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
-                            Text(
-                                text = "No Service Providers Added Yet",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
-                            Text(
-                                text = "Your service catalog is empty. Tap '+ Add Pro' to add electricians, plumbers, carpenters, or mechanics.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Button(
-                                onClick = onAddProviderClick,
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Add Service Provider", fontWeight = FontWeight.Bold)
+                            Column {
+                                Text(
+                                    text = "On-Demand Service Dispatch ⚡",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = "Real-time specialist matching, just like Ola & Uber",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextSecondary
+                                )
                             }
+                        }
+
+                        Text(
+                            text = "Select any service, preferred slot & location. Your request will be instantly broadcasted to all verified specialists in your area. The first to accept is dispatched to your doorstep.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary,
+                            lineHeight = 20.sp
+                        )
+
+                        // 3 Key Security & Quality Pillars
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = PrimaryBlue.copy(alpha = 0.08f),
+                                border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.25f)),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(Icons.Default.Bolt, null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text("Fast Dispatch", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                    Text("15-30 mins", fontSize = 10.sp, color = TextSecondary)
+                                }
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = SecondaryTeal.copy(alpha = 0.08f),
+                                border = BorderStroke(1.dp, SecondaryTeal.copy(alpha = 0.25f)),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(Icons.Default.Shield, null, tint = SecondaryTeal, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text("2-OTP Security", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                    Text("Verified Start", fontSize = 10.sp, color = TextSecondary)
+                                }
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = AccentGold.copy(alpha = 0.08f),
+                                border = BorderStroke(1.dp, AccentGold.copy(alpha = 0.25f)),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(Icons.Default.Star, null, tint = AccentGold, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text("Fixed Rate", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                    Text("From ₹399/hr", fontSize = 10.sp, color = TextSecondary)
+                                }
+                            }
+                        }
+
+                        Button(
+                            onClick = {
+                                dispatchCategory = ServiceCategory.ELECTRICIAN
+                                showDispatchDialog = true
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                        ) {
+                            Icon(Icons.Default.Radio, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Request Specialist Now 🚀",
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White,
+                                fontSize = 15.sp
+                            )
                         }
                     }
                 }
-            } else if (filteredProviders.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 24.dp),
-                        contentAlignment = Alignment.Center
+            }
+
+            // How Ola/Uber Style Booking Works
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceVariantLight),
+                    border = BorderStroke(0.8.dp, CardBorder)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "No providers match your filter criteria.",
-                            color = TextSecondary,
-                            style = MaterialTheme.typography.bodyMedium
+                            text = "How SaServe On-Demand Works",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
                         )
+
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Box(modifier = Modifier.size(24.dp).background(PrimaryBlue, CircleShape), contentAlignment = Alignment.Center) {
+                                Text("1", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                            Text("Select category, slot & address", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Box(modifier = Modifier.size(24.dp).background(SecondaryTeal, CircleShape), contentAlignment = Alignment.Center) {
+                                Text("2", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                            Text("Request broadcasts to nearby specialists in real-time", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Box(modifier = Modifier.size(24.dp).background(AccentSky, CircleShape), contentAlignment = Alignment.Center) {
+                                Text("3", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                            Text("First specialist to accept is assigned with 2-OTP security", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        }
                     }
-                }
-            } else {
-                items(filteredProviders) { provider ->
-                    ProviderCard(
-                        provider = provider,
-                        onBookClick = { onBookProvider(provider) },
-                        onViewDetail = { onProviderSelected(provider) }
-                    )
                 }
             }
         }
+    }
+
+    // Profile Edit Dialog
+    if (showProfileDialog) {
+        var editName by remember(currentUser) { mutableStateOf(currentUser?.name ?: "") }
+        var editPhone by remember(currentUser) { mutableStateOf(currentUser?.phone ?: "") }
+        var editEmail by remember(currentUser) { mutableStateOf(currentUser?.email ?: "") }
+        var editAddress by remember(currentUser) { mutableStateOf(currentUser?.address ?: "") }
+
+        AlertDialog(
+            onDismissRequest = { showProfileDialog = false },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.Person, contentDescription = null, tint = PrimaryBlue)
+                    Text("My Profile", fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = { Text("Full Name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = editPhone,
+                        onValueChange = { editPhone = it },
+                        label = { Text("Mobile Number") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = editEmail,
+                        onValueChange = { editEmail = it },
+                        label = { Text("Email Address") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = editAddress,
+                        onValueChange = { editAddress = it },
+                        label = { Text("Service Address") },
+                        maxLines = 2,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        repository.updateUserProfile(editName, editPhone, editEmail, editAddress)
+                        showProfileDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                ) {
+                    Text("Save Changes", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showProfileDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Ola/Uber Style Instant On-Demand Dispatch Dialog
+    if (showDispatchDialog) {
+        var selectedCategory by remember { mutableStateOf(dispatchCategory) }
+        var selectedDate by remember { mutableStateOf("Today") }
+        var selectedSlot by remember { mutableStateOf("Immediate (in 30 mins)") }
+        var serviceAddress by remember(currentUser, savedAddresses) {
+            mutableStateOf(savedAddresses.firstOrNull()?.formattedDisplayAddress ?: currentUser?.address ?: "Current Location")
+        }
+        var issueNotes by remember { mutableStateOf("") }
+        var isBroadcasting by remember { mutableStateOf(false) }
+        var assignedBooking by remember { mutableStateOf<Booking?>(null) }
+        val coroutineScope = rememberCoroutineScope()
+
+        AlertDialog(
+            onDismissRequest = {
+                if (!isBroadcasting) {
+                    showDispatchDialog = false
+                    assignedBooking = null
+                }
+            },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = if (assignedBooking != null) Icons.Default.CheckCircle else Icons.Default.Radio,
+                        contentDescription = null,
+                        tint = if (assignedBooking != null) StatusCompleted else PrimaryBlue
+                    )
+                    Text(
+                        text = if (assignedBooking != null) "Specialist Assigned!" else "Request ${selectedCategory.displayName}",
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    if (isBroadcasting) {
+                        // Real-time Radar Pulse Broadcast Screen
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.size(120.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(100.dp),
+                                    color = PrimaryBlue,
+                                    strokeWidth = 4.dp
+                                )
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(70.dp),
+                                    color = SecondaryTeal,
+                                    strokeWidth = 3.dp
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(PrimaryBlue, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.NearMe,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+
+                            Text(
+                                text = "Broadcasting to Nearby Specialists...",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium,
+                                textAlign = TextAlign.Center,
+                                color = TextPrimary
+                            )
+
+                            Text(
+                                text = "Sending request to verified ${selectedCategory.displayName} specialists in your area. Waiting for the first to accept...",
+                                style = MaterialTheme.typography.bodySmall,
+                                textAlign = TextAlign.Center,
+                                color = TextSecondary
+                            )
+                        }
+                    } else if (assignedBooking != null) {
+                        // Assigned Specialist Card
+                        val booking = assignedBooking!!
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = StatusAcceptedBg)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .background(PrimaryBlue, CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                                    }
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = booking.providerName,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = TextPrimary
+                                        )
+                                        Text(
+                                            text = "${booking.category.displayName} Specialist • 4.9 ★",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = StatusAccepted
+                                        )
+                                    }
+                                }
+
+                                HorizontalDivider(color = Color.White.copy(alpha = 0.4f))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Estimated Arrival", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                    Text("~15-20 mins", fontWeight = FontWeight.Bold, color = TextPrimary)
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Start OTP", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                    Text(
+                                        text = booking.startOtp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = PrimaryBlue,
+                                        fontSize = 16.sp
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        // Service selection form
+                        Text(
+                            text = "Select Date & Time for ${selectedCategory.displayName}",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+
+                        // Date options
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf("Today", "Tomorrow", "In 2 Days").forEach { dateOpt ->
+                                FilterChip(
+                                    selected = selectedDate == dateOpt,
+                                    onClick = { selectedDate = dateOpt },
+                                    label = { Text(dateOpt) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = PrimaryBlue,
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
+                            }
+                        }
+
+                        // Time slots
+                        Text(
+                            text = "Preferred Time Slot",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        val slots = listOf("Immediate (in 30 mins)", "10:00 AM - 12:00 PM", "02:00 PM - 04:00 PM", "05:00 PM - 07:00 PM")
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            slots.forEach { slot ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (selectedSlot == slot) PrimaryBlue.copy(alpha = 0.12f) else Color.Transparent)
+                                        .clickable { selectedSlot = slot }
+                                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = selectedSlot == slot,
+                                        onClick = { selectedSlot = slot },
+                                        colors = RadioButtonDefaults.colors(selectedColor = PrimaryBlue)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(slot, style = MaterialTheme.typography.bodySmall, color = TextPrimary)
+                                }
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = serviceAddress,
+                            onValueChange = { serviceAddress = it },
+                            label = { Text("Service Location") },
+                            maxLines = 2,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        OutlinedTextField(
+                            value = issueNotes,
+                            onValueChange = { issueNotes = it },
+                            label = { Text("Notes / Problem Details (Optional)") },
+                            placeholder = { Text("e.g. Leaking faucet or switchboard issue") },
+                            maxLines = 2,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Text(
+                            text = "⚡ Fixed Rate: ₹399/hr • 2-OTP Security Guaranteed",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = PrimaryBlue,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                if (assignedBooking != null) {
+                    Button(
+                        onClick = {
+                            val target = assignedBooking!!
+                            showDispatchDialog = false
+                            assignedBooking = null
+                            onBookingSelected(target)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                    ) {
+                        Text("Track Live Service", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                } else if (!isBroadcasting) {
+                    Button(
+                        onClick = {
+                            isBroadcasting = true
+                            coroutineScope.launch {
+                                val booked = repository.broadcastServiceDispatch(
+                                    category = selectedCategory,
+                                    date = selectedDate,
+                                    timeSlot = selectedSlot,
+                                    address = serviceAddress,
+                                    issueDescription = issueNotes
+                                )
+                                isBroadcasting = false
+                                assignedBooking = booked
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                    ) {
+                        Text("Broadcast Request 🚀", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            },
+            dismissButton = {
+                if (!isBroadcasting) {
+                    TextButton(onClick = {
+                        showDispatchDialog = false
+                        assignedBooking = null
+                    }) {
+                        Text("Close")
+                    }
+                }
+            }
+        )
+    }
+
+    // Dedicated Theme Selection Dialog (System, Light, Dark)
+    if (showThemeDialog) {
+        AlertDialog(
+            onDismissRequest = { showThemeDialog = false },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.Palette, contentDescription = null, tint = PrimaryBlue)
+                    Text("Select App Theme", fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Choose your preferred appearance for SaServe:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+
+                    // System Default
+                    Surface(
+                        onClick = {
+                            repository.setThemeMode(AppThemeMode.SYSTEM)
+                            showThemeDialog = false
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (currentThemeMode == AppThemeMode.SYSTEM) PrimaryBlue.copy(alpha = 0.12f) else SurfaceVariantLight,
+                        border = BorderStroke(
+                            width = if (currentThemeMode == AppThemeMode.SYSTEM) 1.5.dp else 1.dp,
+                            color = if (currentThemeMode == AppThemeMode.SYSTEM) PrimaryBlue else CardBorder
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(Icons.Default.SettingsBrightness, null, tint = if (currentThemeMode == AppThemeMode.SYSTEM) PrimaryBlue else TextSecondary)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("System Default", fontWeight = FontWeight.Bold, color = if (currentThemeMode == AppThemeMode.SYSTEM) PrimaryBlue else TextPrimary)
+                                Text("Automatically match device theme", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                            }
+                            RadioButton(
+                                selected = currentThemeMode == AppThemeMode.SYSTEM,
+                                onClick = {
+                                    repository.setThemeMode(AppThemeMode.SYSTEM)
+                                    showThemeDialog = false
+                                },
+                                colors = RadioButtonDefaults.colors(selectedColor = PrimaryBlue)
+                            )
+                        }
+                    }
+
+                    // Light Mode
+                    Surface(
+                        onClick = {
+                            repository.setThemeMode(AppThemeMode.LIGHT)
+                            showThemeDialog = false
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (currentThemeMode == AppThemeMode.LIGHT) PrimaryBlue.copy(alpha = 0.12f) else SurfaceVariantLight,
+                        border = BorderStroke(
+                            width = if (currentThemeMode == AppThemeMode.LIGHT) 1.5.dp else 1.dp,
+                            color = if (currentThemeMode == AppThemeMode.LIGHT) PrimaryBlue else CardBorder
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(Icons.Default.LightMode, null, tint = if (currentThemeMode == AppThemeMode.LIGHT) PrimaryBlue else TextSecondary)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Light Mode", fontWeight = FontWeight.Bold, color = if (currentThemeMode == AppThemeMode.LIGHT) PrimaryBlue else TextPrimary)
+                                Text("Crisp white & clean daylight theme", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                            }
+                            RadioButton(
+                                selected = currentThemeMode == AppThemeMode.LIGHT,
+                                onClick = {
+                                    repository.setThemeMode(AppThemeMode.LIGHT)
+                                    showThemeDialog = false
+                                },
+                                colors = RadioButtonDefaults.colors(selectedColor = PrimaryBlue)
+                            )
+                        }
+                    }
+
+                    // Dark Mode
+                    Surface(
+                        onClick = {
+                            repository.setThemeMode(AppThemeMode.DARK)
+                            showThemeDialog = false
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (currentThemeMode == AppThemeMode.DARK) PrimaryBlue.copy(alpha = 0.12f) else SurfaceVariantLight,
+                        border = BorderStroke(
+                            width = if (currentThemeMode == AppThemeMode.DARK) 1.5.dp else 1.dp,
+                            color = if (currentThemeMode == AppThemeMode.DARK) PrimaryBlue else CardBorder
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(Icons.Default.DarkMode, null, tint = if (currentThemeMode == AppThemeMode.DARK) PrimaryBlue else TextSecondary)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Dark Mode", fontWeight = FontWeight.Bold, color = if (currentThemeMode == AppThemeMode.DARK) PrimaryBlue else TextPrimary)
+                                Text("Obsidian black with vibrant blue/cyan accents", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                            }
+                            RadioButton(
+                                selected = currentThemeMode == AppThemeMode.DARK,
+                                onClick = {
+                                    repository.setThemeMode(AppThemeMode.DARK)
+                                    showThemeDialog = false
+                                },
+                                colors = RadioButtonDefaults.colors(selectedColor = PrimaryBlue)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showThemeDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                ) {
+                    Text("Done", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
     }
 }
 }
@@ -971,7 +1656,7 @@ fun ProviderListScreen(
                             label = { Text(option) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = PrimaryBlue,
-                                selectedLabelColor = Color(0xFF0A0C0E)
+                                selectedLabelColor = Color.White
                             )
                         )
                     }

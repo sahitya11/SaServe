@@ -51,7 +51,7 @@ export const Logo: React.FC<LogoProps> = ({ size = '100%', className = '', showT
         <circle cx="0" cy="95" r="7" fill="#06b6d4" />
       </g>
 
-      {/* Typography */}
+      {/* Typography: "Sa" in Blue #2563eb, "Serve" in White #ffffff */}
       {showText && (
         <>
           <text
@@ -61,10 +61,10 @@ export const Logo: React.FC<LogoProps> = ({ size = '100%', className = '', showT
             fontFamily="'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
             fontSize="44"
             fontWeight="800"
-            fill="#ffffff"
             letterSpacing="1"
           >
-            SaServe
+            <tspan fill="#2563eb">Sa</tspan>
+            <tspan fill="#ffffff">Serve</tspan>
           </text>
           <text
             x="250"
