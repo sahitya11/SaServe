@@ -5,21 +5,28 @@ import * as THREE from 'three';
  * SaServe3DHelixLogo - Interactive 3D Speed Helix Logo Component
  * 
  * Features:
- * - Unobstructed 3D open spiral helix geometry with primary & accent ribbons
- * - Ambient floating energy particles matching brand palette
+ * - 100% 3D WebGL canvas: Unobstructed ascending spiral vortex (Speed Helix)
+ * - Primary metallic royal blue ribbon + complementary cyan accent tracer strand
+ * - Completely hollow center with ZERO center obstructions or flat 2D shapes
+ * - Ambient floating energy particles matching the brand palette
  * - Interactive cursor-following tilt physics with smooth lerp damping
- * - Clean WebGL cleanup and auto-resize handling
+ * - Clean WebGL resource disposal and resize handling
  */
 export default function SaServe3DHelixLogo({
-  size = 180,               // Diameter in pixels (square)
+  size = 240,               // Diameter in pixels (square)
   primaryColor = '#2563eb', // Brand primary (Royal Blue)
   accentColor = '#06b6d4',  // Service accent (Cyan)
   speed = 1.0,              // Orbit speed multiplier
   interactive = true,       // Enable cursor tilt
   showText = true,          // Display "SaServe" text next to logo
+  defaultMode = 'helix',    // Helix mode
   className = ''
 }) {
   const containerRef = useRef(null);
+
+  // Normalize props that might be passed as strings (e.g. size="{240}" or showText="{true}")
+  const numericSize = typeof size === 'string' ? (parseInt(size.replace(/[{}]/g, ''), 10) || 240) : size;
+  const isShowText = typeof showText === 'string' ? (showText === 'true' || showText === '{true}') : Boolean(showText);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -36,8 +43,8 @@ export default function SaServe3DHelixLogo({
       antialias: true,
       powerPreference: 'high-performance'
     });
-    renderer.setSize(size, size);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(numericSize, numericSize);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     container.appendChild(renderer.domElement);
 
     // 3. Lighting Setup
@@ -52,7 +59,7 @@ export default function SaServe3DHelixLogo({
     pointLight2.position.set(-10, -10, -10);
     scene.add(pointLight2);
 
-    // 4. Logo Group Setup
+    // 4. Logo Group Setup (Speed Helix Geometry)
     const logoGroup = new THREE.Group();
     scene.add(logoGroup);
 
@@ -73,7 +80,7 @@ export default function SaServe3DHelixLogo({
       emissiveIntensity: 0.45
     });
 
-    // Primary Speed Helix Spiral Ribbon (clean, unobstructed vortex)
+    // Primary Speed Helix Spiral Ribbon (continuous ascending 3D vortex, NO center obstructions)
     const primaryHelixPoints = [];
     const accentHelixPoints = [];
     const segments = 140;
@@ -104,13 +111,13 @@ export default function SaServe3DHelixLogo({
     const loopMesh = new THREE.Mesh(loopGeo, primaryMat);
     logoGroup.add(loopMesh);
 
-    // Secondary smooth accent tracer strand
+    // Secondary smooth cyan accent tracer strand
     const tracerCurve = new THREE.CatmullRomCurve3(accentHelixPoints);
     const tracerGeo = new THREE.TubeGeometry(tracerCurve, 120, 0.12, 12, false);
     const tracerMesh = new THREE.Mesh(tracerGeo, accentMat);
     logoGroup.add(tracerMesh);
 
-    // 6. Glowing Orbital Particles
+    // 6. Glowing Orbital Energy Particles
     const particleCount = 65;
     const pGeo = new THREE.BufferGeometry();
     const pPositions = new Float32Array(particleCount * 3);
@@ -167,7 +174,7 @@ export default function SaServe3DHelixLogo({
 
     // Animation Loop
     let animId;
-    let clock = new THREE.Clock();
+    const clock = new THREE.Clock();
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
@@ -205,26 +212,26 @@ export default function SaServe3DHelixLogo({
         container.removeChild(renderer.domElement);
       }
     };
-  }, [size, primaryColor, accentColor, speed, interactive]);
+  }, [numericSize, primaryColor, accentColor, speed, interactive, defaultMode]);
 
   return (
     <div className={`inline-flex items-center gap-3 select-none ${className}`}>
       {/* 3D WebGL Canvas Viewport */}
       <div 
         ref={containerRef} 
-        style={{ width: `${size}px`, height: `${size}px` }}
+        style={{ width: `${numericSize}px`, height: `${numericSize}px` }}
         className="relative flex items-center justify-center cursor-grab active:cursor-grabbing transition-transform hover:scale-105 duration-300"
-        title="SaServe 3D Interactive Service Loop - Move mouse to tilt"
+        title="SaServe 3D Speed Helix - Interactive WebGL Logo"
       />
 
       {/* Brand Typography */}
-      {showText && (
-        <div className="flex flex-col">
-          <span className="text-2xl font-black tracking-tight text-white font-sans">
+      {isShowText && (
+        <div className="flex flex-col justify-center">
+          <span className="text-2xl font-black tracking-tight text-white font-sans leading-tight">
             Sa<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-300">Serve</span>
           </span>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-            Trusted On-Demand Services
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-cyan-400/90 mt-0.5">
+            Connecting You with Trusted Services
           </span>
         </div>
       )}

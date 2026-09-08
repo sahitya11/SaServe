@@ -6,7 +6,7 @@ interface LogoProps {
   showText?: boolean;
 }
 
-export const Logo: React.FC<LogoProps> = ({ size = 120, className = '', showText = true }) => {
+export const Logo: React.FC<LogoProps> = ({ size = '100%', className = '', showText = true }) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -29,7 +29,7 @@ export const Logo: React.FC<LogoProps> = ({ size = 120, className = '', showText
       {/* Background Canvas */}
       <rect width="500" height="500" rx="36" fill="#090d16" />
 
-      {/* Clean Vertical Top-to-Bottom S-Loop */}
+      {/* Clean Vertical Top-to-Bottom S-Loop (Shifted well above typography) */}
       <g transform="translate(250, 160)" filter="url(#saServeGlow)">
         <path
           d="M 0,-95 
