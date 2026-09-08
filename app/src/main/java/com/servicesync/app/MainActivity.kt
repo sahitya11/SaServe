@@ -62,6 +62,7 @@ sealed class Screen {
     object AddressSetup : Screen()
     object Settings : Screen()
     object CustomerHome : Screen()
+    data class ServiceCatalog(val category: ServiceCategory, val preselectedItemId: String? = null) : Screen()
     data class ProviderList(val category: ServiceCategory) : Screen()
     data class ProviderDetail(val provider: ServiceProvider) : Screen()
     object CustomerBookings : Screen()
@@ -177,7 +178,10 @@ fun MainAppHost(initialNavTarget: String?, repository: ServiceSyncRepository) {
                     CustomerHomeScreen(
                         repository = repository,
                         onCategorySelected = { category ->
-                            currentScreen = Screen.ProviderList(category)
+                            currentScreen = Screen.ServiceCatalog(category)
+                        },
+                        onCategorySelectedWithItem = { category, itemId ->
+                            currentScreen = Screen.ServiceCatalog(category, itemId)
                         },
                         onProviderSelected = { provider ->
                             currentScreen = Screen.ProviderDetail(provider)
@@ -211,6 +215,18 @@ fun MainAppHost(initialNavTarget: String?, repository: ServiceSyncRepository) {
                             repository.logoutCustomer()
                             currentScreen = Screen.Auth
                         },
+                        onBookingSelected = { booking ->
+                            currentScreen = Screen.BookingStatus(booking)
+                        }
+                    )
+                }
+
+                is Screen.ServiceCatalog -> {
+                    ServiceCatalogScreen(
+                        initialCategory = screen.category,
+                        preselectedItemId = screen.preselectedItemId,
+                        repository = repository,
+                        onBackClick = { currentScreen = Screen.CustomerHome },
                         onBookingSelected = { booking ->
                             currentScreen = Screen.BookingStatus(booking)
                         }

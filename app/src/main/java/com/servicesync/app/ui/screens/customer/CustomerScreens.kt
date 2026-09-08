@@ -32,86 +32,12 @@ import com.servicesync.app.ui.components.*
 import com.servicesync.app.ui.theme.*
 import kotlinx.coroutines.launch
 
-data class SubServiceItem(
-    val id: String,
-    val name: String,
-    val description: String,
-    val price: String,
-    val icon: ImageVector,
-    val isPopular: Boolean = false
-)
-
-fun getSubServicesForCategory(category: ServiceCategory): List<SubServiceItem> {
-    return when (category) {
-        ServiceCategory.ELECTRICIAN -> listOf(
-            SubServiceItem("elec_fan", "Ceiling & Exhaust Fan", "Repair, blade balancing, regulator issue, installation", "₹199", Icons.Default.Bolt, true),
-            SubServiceItem("elec_switch", "Switchboard & Sockets", "Switch replacement, socket repair, sparking fix", "₹149", Icons.Default.Power, true),
-            SubServiceItem("elec_light", "Lights & Chandelier", "LED tube, false ceiling lights, chandelier mounting", "₹199", Icons.Default.Lightbulb, false),
-            SubServiceItem("elec_mcb", "MCB & Fuse Box", "Frequent tripping, breaker replacement, short circuit fix", "₹249", Icons.Default.Bolt, true),
-            SubServiceItem("elec_inverter", "Inverter & Stabilizer", "Battery terminal cleaning, inverter setup & wiring", "₹349", Icons.Default.BatteryChargingFull, false),
-            SubServiceItem("elec_geyser", "Geyser / Water Heater", "Heating element replacement, thermostat fix, wiring", "₹299", Icons.Default.WaterDrop, true),
-            SubServiceItem("elec_ac_point", "AC Power Point & Heavy Line", "16A heavy socket, separate line wiring, MCB setup", "₹249", Icons.Default.ElectricalServices, false),
-            SubServiceItem("elec_wiring", "Complete Home Wiring Check", "Earthing test, safety load audit, wiring health", "₹399", Icons.Default.HomeRepairService, false)
-        )
-        ServiceCategory.PLUMBER -> listOf(
-            SubServiceItem("plumb_tap", "Faucets & Taps", "Dripping tap repair, mixer cartridge, new faucet fitting", "₹149", Icons.Default.WaterDrop, true),
-            SubServiceItem("plumb_sink", "Washbasin & Kitchen Sink", "Drain pipe blockage, silicone sealing, sink replacement", "₹199", Icons.Default.Plumbing, true),
-            SubServiceItem("plumb_toilet", "Toilet & Flush Tank", "Flush button, siphon replacement, jet spray, seat cover", "₹249", Icons.Default.Sanitizer, true),
-            SubServiceItem("plumb_drain", "Drain Blockage Unclogging", "Severe bathroom / balcony drain unclogging, p-trap cleaning", "₹299", Icons.Default.CleaningServices, false),
-            SubServiceItem("plumb_pipe", "Pipe Leakage & Water Tank", "Concealed pipeline leak detection, float valve, tank check", "₹349", Icons.Default.HomeRepairService, false),
-            SubServiceItem("plumb_geyser", "Geyser Pipeline Installation", "Hot & cold flexible hose fitting, inlet valve connection", "₹299", Icons.Default.Build, false),
-            SubServiceItem("plumb_shower", "Shower & Bath Mixer", "Overhead shower installation, diverter replacement", "₹249", Icons.Default.Shower, false),
-            SubServiceItem("plumb_motor", "Water Pump & Pressure Motor", "Pump priming, motor repair, automatic controller setup", "₹449", Icons.Default.Speed, false)
-        )
-        ServiceCategory.CARPENTER -> listOf(
-            SubServiceItem("carp_locks", "Door Locks & Handles", "Mortise lock, handle replacement, latch alignment, stopper", "₹199", Icons.Default.Lock, true),
-            SubServiceItem("carp_cupboard", "Cupboard & Wardrobe", "Hinges repair, magnetic catch, channel replacement", "₹249", Icons.Default.MeetingRoom, true),
-            SubServiceItem("carp_assembly", "Furniture Assembly", "Bed, study desk, dining table, bookshelf installation", "₹399", Icons.Default.Chair, true),
-            SubServiceItem("carp_bed", "Bed Support & Headboard", "Hydraulic lift repair, ply support fixing, creak silencing", "₹299", Icons.Default.Bed, false),
-            SubServiceItem("carp_window", "Window & Mosquito Mesh", "Sliding window rollers, latch fix, mesh net replacement", "₹249", Icons.Default.Window, false),
-            SubServiceItem("carp_kitchen", "Modular Kitchen Cabinets", "Telescopic runner channel, hydraulic strut, soft-close hinge", "₹349", Icons.Default.Kitchen, false),
-            SubServiceItem("carp_polish", "Wood Polishing & Varnish", "Scratch removal, PU coat, matte/gloss teak touchup", "₹499", Icons.Default.FormatPaint, false),
-            SubServiceItem("carp_mount", "Wall Shelves & TV Unit Drill", "Floating shelf mounting, photo frame & curtain rod fixing", "₹199", Icons.Default.Handyman, false)
-        )
-        ServiceCategory.MECHANIC -> listOf(
-            SubServiceItem("mech_bike", "Two-Wheeler General Tuneup", "Engine oil change, chain lubrication, brake adjustment", "₹299", Icons.Default.TwoWheeler, true),
-            SubServiceItem("mech_car_oil", "Car Engine Oil & Filter", "Synthetic oil replacement, oil filter check, fluid top-up", "₹499", Icons.Default.DirectionsCar, true),
-            SubServiceItem("mech_brake", "Brake Inspection & Pads", "Brake pad replacement, disc skimming, brake fluid bleed", "₹399", Icons.Default.Speed, false),
-            SubServiceItem("mech_battery", "Battery Jumpstart & SOS", "On-spot jumpstart cables, alternator & battery health test", "₹199", Icons.Default.Bolt, true),
-            SubServiceItem("mech_tyre", "Tyre Puncture & Replacement", "Tubeless puncture fix, stepney tyre change, air pressure", "₹149", Icons.Default.Build, true),
-            SubServiceItem("mech_scan", "OBD Engine Diagnostic Scan", "Check engine light scan, sensor reset, ECU fault report", "₹399", Icons.Default.Search, false),
-            SubServiceItem("mech_ac", "Car AC Cooling & Gas Refill", "AC gas pressure top-up, condenser cleaning, cabin filter", "₹599", Icons.Default.HomeRepairService, false),
-            SubServiceItem("mech_inspect", "Pre-Trip Complete Inspection", "50-point checklist: brakes, belts, fluids, suspension", "₹349", Icons.Default.CheckCircle, false)
-        )
-        ServiceCategory.APPLIANCE_REPAIR -> listOf(
-            SubServiceItem("app_fridge", "Refrigerator / Fridge", "Single/Double door not cooling, gas leak, thermostat fix", "₹399", Icons.Default.Kitchen, true),
-            SubServiceItem("app_wm", "Washing Machine", "Front/Top load drum spin issue, water drainage error, noise", "₹399", Icons.Default.LocalLaundryService, true),
-            SubServiceItem("app_ac", "Air Conditioner (Split / Window)", "Jet pump deep clean, cooling fix, compressor & gas recharge", "₹499", Icons.Default.HomeRepairService, true),
-            SubServiceItem("app_micro", "Microwave & OTG", "Not heating, turntable stuck, spark inside, touch membrane", "₹299", Icons.Default.Kitchen, false),
-            SubServiceItem("app_ro", "Water Purifier (RO + UV)", "Filter replacement, sediment/carbon filter, TDS balance", "₹299", Icons.Default.WaterDrop, true),
-            SubServiceItem("app_tv", "LED TV & Smart TV", "Display panel backlight, HDMI/audio fix, wall bracket mount", "₹349", Icons.Default.Tv, false),
-            SubServiceItem("app_chimney", "Kitchen Chimney & Cooktop", "Degreasing baffle filter, motor suction, burner cleaning", "₹349", Icons.Default.Build, false),
-            SubServiceItem("app_heater", "Room Heater / Geyser", "Heating coil change, safety valve replacement, power check", "₹249", Icons.Default.Bolt, false)
-        )
-        ServiceCategory.PAINTER -> listOf(
-            SubServiceItem("paint_patch", "Wall Patch & Dampness Touchup", "Putty filling, anti-fungal treatment, primer & color match", "₹349", Icons.Default.Brush, true),
-            SubServiceItem("paint_room", "Single Room Repaint", "Ceiling + 4 walls 2 coats of emulsion paint with masking", "₹999", Icons.Default.FormatPaint, true),
-            SubServiceItem("paint_waterproof", "Waterproofing & Leak Sealing", "Terrace, roof cracks, damp bathroom wall elastomeric coat", "₹599", Icons.Default.HomeRepairService, true),
-            SubServiceItem("paint_enamel", "Door, Window & Grill Enamel", "Anti-rust metal primer + high gloss enamel spray/brush", "₹399", Icons.Default.Handyman, false),
-            SubServiceItem("paint_texture", "Texture & Accent Feature Wall", "Royal luxury stencil, metallic texture, geometric patterns", "₹799", Icons.Default.Palette, false),
-            SubServiceItem("paint_exterior", "Exterior Weatherproof Painting", "Exterior emulsion anti-dust, sun & rain protect coat", "₹1499", Icons.Default.Home, false),
-            SubServiceItem("paint_consult", "Laser Measure & Color Consult", "Digital room measurement, color catalog, detailed quotation", "₹149", Icons.Default.Build, false),
-            SubServiceItem("paint_wood", "Wood Stain & PU Polish", "Clear varnish, melamine coat, natural wood grain enhancement", "₹449", Icons.Default.FormatPaint, false)
-        )
-    }
-}
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerHomeScreen(
     repository: ServiceSyncRepository,
     onCategorySelected: (ServiceCategory) -> Unit,
+    onCategorySelectedWithItem: (ServiceCategory, String) -> Unit = { cat, _ -> onCategorySelected(cat) },
     onProviderSelected: (ServiceProvider) -> Unit,
     onBookProvider: (ServiceProvider) -> Unit,
     onOpenNotifications: () -> Unit,
@@ -139,9 +65,6 @@ fun CustomerHomeScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") }
     var showProfileDialog by remember { mutableStateOf(false) }
-    var showDispatchDialog by remember { mutableStateOf(false) }
-    var dispatchCategory by remember { mutableStateOf(ServiceCategory.ELECTRICIAN) }
-    var preselectedSubService by remember { mutableStateOf<SubServiceItem?>(null) }
 
     val unreadNotifCount = notifications.count { !it.isRead }
     val activeBookingsCount = bookings.count {
@@ -745,10 +668,8 @@ fun CustomerHomeScreen(
                                             .fillMaxWidth()
                                             .clip(RoundedCornerShape(10.dp))
                                             .clickable {
-                                                dispatchCategory = cat
-                                                preselectedSubService = subItem
-                                                showDispatchDialog = true
                                                 searchQuery = ""
+                                                onCategorySelectedWithItem(cat, subItem.id)
                                             },
                                         color = SurfaceVariantLight,
                                         shape = RoundedCornerShape(10.dp)
@@ -941,29 +862,17 @@ fun CustomerHomeScreen(
                         CategoryGridItem(
                             category = ServiceCategory.ELECTRICIAN,
                             modifier = Modifier.weight(1f),
-                            onClick = {
-                                dispatchCategory = ServiceCategory.ELECTRICIAN
-                                preselectedSubService = null
-                                showDispatchDialog = true
-                            }
+                            onClick = { onCategorySelected(ServiceCategory.ELECTRICIAN) }
                         )
                         CategoryGridItem(
                             category = ServiceCategory.PLUMBER,
                             modifier = Modifier.weight(1f),
-                            onClick = {
-                                dispatchCategory = ServiceCategory.PLUMBER
-                                preselectedSubService = null
-                                showDispatchDialog = true
-                            }
+                            onClick = { onCategorySelected(ServiceCategory.PLUMBER) }
                         )
                         CategoryGridItem(
                             category = ServiceCategory.CARPENTER,
                             modifier = Modifier.weight(1f),
-                            onClick = {
-                                dispatchCategory = ServiceCategory.CARPENTER
-                                preselectedSubService = null
-                                showDispatchDialog = true
-                            }
+                            onClick = { onCategorySelected(ServiceCategory.CARPENTER) }
                         )
                     }
 
@@ -974,29 +883,17 @@ fun CustomerHomeScreen(
                         CategoryGridItem(
                             category = ServiceCategory.MECHANIC,
                             modifier = Modifier.weight(1f),
-                            onClick = {
-                                dispatchCategory = ServiceCategory.MECHANIC
-                                preselectedSubService = null
-                                showDispatchDialog = true
-                            }
+                            onClick = { onCategorySelected(ServiceCategory.MECHANIC) }
                         )
                         CategoryGridItem(
                             category = ServiceCategory.APPLIANCE_REPAIR,
                             modifier = Modifier.weight(1f),
-                            onClick = {
-                                dispatchCategory = ServiceCategory.APPLIANCE_REPAIR
-                                preselectedSubService = null
-                                showDispatchDialog = true
-                            }
+                            onClick = { onCategorySelected(ServiceCategory.APPLIANCE_REPAIR) }
                         )
                         CategoryGridItem(
                             category = ServiceCategory.PAINTER,
                             modifier = Modifier.weight(1f),
-                            onClick = {
-                                dispatchCategory = ServiceCategory.PAINTER
-                                preselectedSubService = null
-                                showDispatchDialog = true
-                            }
+                            onClick = { onCategorySelected(ServiceCategory.PAINTER) }
                         )
                     }
                 }
@@ -1076,549 +973,7 @@ fun CustomerHomeScreen(
         )
     }
 
-    // Urban Company Style 2-Step Service & Appliance Booking Dialog
-    if (showDispatchDialog) {
-        var selectedCategory by remember(dispatchCategory) { mutableStateOf(dispatchCategory) }
-        var selectedSubItem by remember(dispatchCategory, preselectedSubService) {
-            mutableStateOf(preselectedSubService ?: getSubServicesForCategory(dispatchCategory).firstOrNull())
-        }
-        var currentBookingStep by remember(preselectedSubService) {
-            mutableStateOf(if (preselectedSubService != null) 2 else 1)
-        }
-        var selectedDate by remember { mutableStateOf("Today") }
-        var selectedSlot by remember { mutableStateOf("Immediate (in 30 mins)") }
-        var serviceAddress by remember(currentUser, savedAddresses) {
-            mutableStateOf(savedAddresses.firstOrNull()?.formattedDisplayAddress ?: currentUser?.address ?: "Current Location")
-        }
-        var issueNotes by remember { mutableStateOf("") }
-        var isBroadcasting by remember { mutableStateOf(false) }
-        var assignedBooking by remember { mutableStateOf<Booking?>(null) }
-        val coroutineScope = rememberCoroutineScope()
-
-        AlertDialog(
-            onDismissRequest = {
-                if (!isBroadcasting) {
-                    showDispatchDialog = false
-                    assignedBooking = null
-                    preselectedSubService = null
-                }
-            },
-            title = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = when {
-                            assignedBooking != null -> Icons.Default.CheckCircle
-                            isBroadcasting -> Icons.Default.Radio
-                            currentBookingStep == 1 -> getCategoryIcon(selectedCategory)
-                            else -> Icons.Default.Schedule
-                        },
-                        contentDescription = null,
-                        tint = when {
-                            assignedBooking != null -> StatusCompleted
-                            else -> PrimaryBlue
-                        }
-                    )
-                    Text(
-                        text = when {
-                            assignedBooking != null -> "Specialist Assigned!"
-                            isBroadcasting -> "Broadcasting Request..."
-                            currentBookingStep == 1 -> "Select ${selectedCategory.displayName} Service"
-                            else -> "Schedule & Location"
-                        },
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    if (isBroadcasting) {
-                        // Real-time Radar Pulse Broadcast Screen
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier.size(120.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(100.dp),
-                                    color = PrimaryBlue,
-                                    strokeWidth = 4.dp
-                                )
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(70.dp),
-                                    color = SecondaryTeal,
-                                    strokeWidth = 3.dp
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .background(PrimaryBlue, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        Icons.Default.NearMe,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                            }
-
-                            Text(
-                                text = "Broadcasting to Nearby Specialists...",
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.titleMedium,
-                                textAlign = TextAlign.Center,
-                                color = TextPrimary
-                            )
-
-                            Text(
-                                text = "Sending request to verified ${selectedCategory.displayName} specialists for ${selectedSubItem?.name ?: selectedCategory.displayName}. Waiting for the first to accept...",
-                                style = MaterialTheme.typography.bodySmall,
-                                textAlign = TextAlign.Center,
-                                color = TextSecondary
-                            )
-                        }
-                    } else if (assignedBooking != null) {
-                        // Assigned Specialist Card
-                        val booking = assignedBooking!!
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = StatusAcceptedBg)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .background(PrimaryBlue, CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(28.dp))
-                                    }
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = booking.providerName,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = TextPrimary
-                                        )
-                                        Text(
-                                            text = "${booking.category.displayName} Specialist • 4.9 ★",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = StatusAccepted
-                                        )
-                                    }
-                                }
-
-                                HorizontalDivider(color = Color.White.copy(alpha = 0.4f))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text("Service Item", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                                    Text(selectedSubItem?.name ?: booking.category.displayName, fontWeight = FontWeight.Bold, color = TextPrimary)
-                                }
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text("Estimated Arrival", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                                    Text("~15-20 mins", fontWeight = FontWeight.Bold, color = TextPrimary)
-                                }
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text("Start OTP", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                                    Text(
-                                        text = booking.startOtp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = PrimaryBlue,
-                                        fontSize = 16.sp
-                                    )
-                                }
-                            }
-                        }
-                    } else if (currentBookingStep == 1) {
-                        // Step 1: Urban Company Style Item & Appliance Selection
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            // Category Switcher Chips
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                items(ServiceCategory.values()) { cat ->
-                                    val isCatSelected = selectedCategory == cat
-                                    FilterChip(
-                                        selected = isCatSelected,
-                                        onClick = {
-                                            selectedCategory = cat
-                                            selectedSubItem = getSubServicesForCategory(cat).firstOrNull()
-                                        },
-                                        label = { Text(cat.displayName, fontSize = 12.sp) },
-                                        leadingIcon = {
-                                            Icon(
-                                                imageVector = getCategoryIcon(cat),
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp),
-                                                tint = if (isCatSelected) Color.White else PrimaryBlue
-                                            )
-                                        },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = PrimaryBlue,
-                                            selectedLabelColor = Color.White
-                                        )
-                                    )
-                                }
-                            }
-
-                            Text(
-                                text = "Select appliance or specific service:",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
-
-                            // List of Sub-Services & Appliances for Selected Category
-                            val subServices = getSubServicesForCategory(selectedCategory)
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                subServices.forEach { item ->
-                                    val isChosen = selectedSubItem?.id == item.id
-                                    Surface(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .clickable { selectedSubItem = item },
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = if (isChosen) PrimaryBlue.copy(alpha = 0.08f) else SurfaceVariantLight,
-                                        border = BorderStroke(
-                                            width = if (isChosen) 1.5.dp else 1.dp,
-                                            color = if (isChosen) PrimaryBlue else CardBorder
-                                        )
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(12.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(40.dp)
-                                                    .clip(CircleShape)
-                                                    .background(if (isChosen) PrimaryBlue else PrimaryBlue.copy(alpha = 0.12f)),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    imageVector = item.icon,
-                                                    contentDescription = null,
-                                                    tint = if (isChosen) Color.White else PrimaryBlue,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            }
-
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                                ) {
-                                                    Text(
-                                                        text = item.name,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = TextPrimary,
-                                                        fontSize = 14.sp
-                                                    )
-                                                    if (item.isPopular) {
-                                                        Surface(
-                                                            shape = RoundedCornerShape(4.dp),
-                                                            color = SecondaryTeal.copy(alpha = 0.15f)
-                                                        ) {
-                                                            Text(
-                                                                text = "POPULAR",
-                                                                color = SecondaryTeal,
-                                                                fontSize = 9.sp,
-                                                                fontWeight = FontWeight.ExtraBold,
-                                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                                Text(
-                                                    text = item.description,
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = TextSecondary,
-                                                    lineHeight = 14.sp
-                                                )
-                                            }
-
-                                            Column(
-                                                horizontalAlignment = Alignment.End,
-                                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                                            ) {
-                                                Surface(
-                                                    shape = RoundedCornerShape(6.dp),
-                                                    color = PrimaryBlue.copy(alpha = 0.15f)
-                                                ) {
-                                                    Text(
-                                                        text = item.price,
-                                                        color = PrimaryBlue,
-                                                        fontWeight = FontWeight.Bold,
-                                                        fontSize = 12.sp,
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                    )
-                                                }
-                                                RadioButton(
-                                                    selected = isChosen,
-                                                    onClick = { selectedSubItem = item },
-                                                    colors = RadioButtonDefaults.colors(selectedColor = PrimaryBlue)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // Step 2: Schedule, Address & Notes
-                        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                            // Selected Item Summary
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                color = PrimaryBlue.copy(alpha = 0.08f),
-                                border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.3f))
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(CircleShape)
-                                            .background(PrimaryBlue),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = selectedSubItem?.icon ?: Icons.Default.Build,
-                                            contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = selectedSubItem?.name ?: selectedCategory.displayName,
-                                            fontWeight = FontWeight.Bold,
-                                            color = TextPrimary,
-                                            fontSize = 14.sp
-                                        )
-                                        Text(
-                                            text = "${selectedCategory.displayName} • ${selectedSubItem?.price ?: "₹399"}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = PrimaryBlue,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    }
-                                    TextButton(onClick = { currentBookingStep = 1 }) {
-                                        Text("Change", style = MaterialTheme.typography.labelSmall, color = PrimaryBlue, fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
-
-                            // Date Selection
-                            Text(
-                                text = "Select Date",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                listOf("Today", "Tomorrow", "In 2 Days").forEach { dateOpt ->
-                                    FilterChip(
-                                        selected = selectedDate == dateOpt,
-                                        onClick = { selectedDate = dateOpt },
-                                        label = { Text(dateOpt) },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = PrimaryBlue,
-                                            selectedLabelColor = Color.White
-                                        )
-                                    )
-                                }
-                            }
-
-                            // Time Slots
-                            Text(
-                                text = "Preferred Time Slot",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
-                            val slots = listOf("Immediate (in 30 mins) ⚡", "10:00 AM - 12:00 PM", "02:00 PM - 04:00 PM", "05:00 PM - 07:00 PM", "07:00 PM - 09:00 PM")
-                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                slots.forEach { slot ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(if (selectedSlot == slot) PrimaryBlue.copy(alpha = 0.12f) else Color.Transparent)
-                                            .clickable { selectedSlot = slot }
-                                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        RadioButton(
-                                            selected = selectedSlot == slot,
-                                            onClick = { selectedSlot = slot },
-                                            colors = RadioButtonDefaults.colors(selectedColor = PrimaryBlue)
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(slot, style = MaterialTheme.typography.bodySmall, color = TextPrimary)
-                                    }
-                                }
-                            }
-
-                            OutlinedTextField(
-                                value = serviceAddress,
-                                onValueChange = { serviceAddress = it },
-                                label = { Text("Service Location") },
-                                leadingIcon = { Icon(Icons.Default.LocationOn, null, tint = PrimaryBlue) },
-                                maxLines = 2,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            OutlinedTextField(
-                                value = issueNotes,
-                                onValueChange = { issueNotes = it },
-                                label = { Text("Notes / Problem Details (Optional)") },
-                                placeholder = { Text("e.g. Fan making screeching noise") },
-                                maxLines = 2,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = SurfaceVariantLight,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Icon(Icons.Default.Shield, null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
-                                    Text(
-                                        text = "Fixed Pricing • 2-OTP Security Guaranteed • Instant Broadcast",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = TextSecondary,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                if (assignedBooking != null) {
-                    Button(
-                        onClick = {
-                            val target = assignedBooking!!
-                            showDispatchDialog = false
-                            assignedBooking = null
-                            preselectedSubService = null
-                            onBookingSelected(target)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                    ) {
-                        Text("Track Live Service 🚀", color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-                } else if (!isBroadcasting) {
-                    if (currentBookingStep == 1) {
-                        Button(
-                            onClick = { currentBookingStep = 2 },
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                        ) {
-                            Text("Continue to Schedule ➔", color = Color.White, fontWeight = FontWeight.Bold)
-                        }
-                    } else {
-                        Button(
-                            onClick = {
-                                isBroadcasting = true
-                                coroutineScope.launch {
-                                    val fullDesc = "${selectedSubItem?.name ?: selectedCategory.displayName}${if (issueNotes.isNotBlank()) " - $issueNotes" else ""}"
-                                    val booked = repository.broadcastServiceDispatch(
-                                        category = selectedCategory,
-                                        date = selectedDate,
-                                        timeSlot = selectedSlot,
-                                        address = serviceAddress,
-                                        issueDescription = fullDesc
-                                    )
-                                    isBroadcasting = false
-                                    assignedBooking = booked
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                        ) {
-                            Text("Broadcast Request 🚀", color = Color.White, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            },
-            dismissButton = {
-                if (!isBroadcasting) {
-                    if (assignedBooking != null) {
-                        TextButton(onClick = {
-                            showDispatchDialog = false
-                            assignedBooking = null
-                            preselectedSubService = null
-                        }) {
-                            Text("Close")
-                        }
-                    } else if (currentBookingStep == 2 && preselectedSubService == null) {
-                        TextButton(onClick = { currentBookingStep = 1 }) {
-                            Text("Back")
-                        }
-                    } else {
-                        TextButton(onClick = {
-                            showDispatchDialog = false
-                            assignedBooking = null
-                            preselectedSubService = null
-                        }) {
-                            Text("Cancel")
-                        }
-                    }
-                }
-            }
-        )
     }
-}
 }
 
 @Composable
