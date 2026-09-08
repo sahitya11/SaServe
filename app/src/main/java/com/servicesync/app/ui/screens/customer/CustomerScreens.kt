@@ -898,6 +898,79 @@ fun CustomerHomeScreen(
                     }
                 }
             }
+
+            // Most Requested Appliances & Quick Fixes (Urban Company Style)
+            item {
+                val commonFixes = remember {
+                    listOf(
+                        Pair(ServiceCategory.ELECTRICIAN, getSubServicesForCategory(ServiceCategory.ELECTRICIAN).first { it.id == "elec_fan" }),
+                        Pair(ServiceCategory.PLUMBER, getSubServicesForCategory(ServiceCategory.PLUMBER).first { it.id == "plumb_tap" }),
+                        Pair(ServiceCategory.APPLIANCE_REPAIR, getSubServicesForCategory(ServiceCategory.APPLIANCE_REPAIR).first { it.id == "app_wm" }),
+                        Pair(ServiceCategory.CARPENTER, getSubServicesForCategory(ServiceCategory.CARPENTER).first { it.id == "carp_locks" }),
+                        Pair(ServiceCategory.APPLIANCE_REPAIR, getSubServicesForCategory(ServiceCategory.APPLIANCE_REPAIR).first { it.id == "app_fridge" }),
+                        Pair(ServiceCategory.ELECTRICIAN, getSubServicesForCategory(ServiceCategory.ELECTRICIAN).first { it.id == "elec_switch" }),
+                        Pair(ServiceCategory.MECHANIC, getSubServicesForCategory(ServiceCategory.MECHANIC).first { it.id == "mech_bike" }),
+                        Pair(ServiceCategory.PAINTER, getSubServicesForCategory(ServiceCategory.PAINTER).first { it.id == "paint_patch" })
+                    )
+                }
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "Most Requested Fixes",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = TextPrimary
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = PrimaryBlue.copy(alpha = 0.12f)
+                            ) {
+                                Text(
+                                    text = "POPULAR",
+                                    color = PrimaryBlue,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                        Text(
+                            text = "Quick 1-tap bookings for top everyday household repairs",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                    }
+
+                    commonFixes.chunked(2).forEach { pairRow ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            pairRow.forEach { (cat, subItem) ->
+                                CommonApplianceFixCard(
+                                    category = cat,
+                                    item = subItem,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        onCategorySelectedWithItem(cat, subItem.id)
+                                    }
+                                )
+                            }
+                            if (pairRow.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -974,6 +1047,261 @@ fun CustomerHomeScreen(
     }
 
     }
+}
+
+@Composable
+fun CommonApplianceFixCard(
+    category: ServiceCategory,
+    item: SubServiceItem,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+        border = BorderStroke(1.dp, CardBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(PrimaryBlue.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(item.icon, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = PrimaryBlue.copy(alpha = 0.12f)
+                ) {
+                    Text(
+                        text = item.price,
+                        color = PrimaryBlue,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = item.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    maxLines = 1
+                )
+                Text(
+                    text = "${category.displayName} • ${item.duration}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextSecondary,
+                    maxLines = 1
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFF59E0B), modifier = Modifier.size(13.dp))
+                    Text(
+                        text = item.rating.replace(" ★", ""),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                }
+
+                Text(
+                    text = "Book Now ➔",
+                    color = PrimaryBlue,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CancellationReasonDialog(
+    booking: Booking,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    val reasons = listOf(
+        "Booked by mistake / wrong service selected",
+        "Specialist delayed / taking too long to arrive",
+        "Issue resolved by myself / found alternative",
+        "Change of plans / not available at home",
+        "Price or scope of work higher than expected",
+        "Emergency / need to reschedule for later",
+        "Other reason"
+    )
+    var selectedReasonIndex by remember { mutableStateOf(0) }
+    var customReason by remember { mutableStateOf("") }
+
+    val isServiceStarted = booking.status == BookingStatus.IN_PROGRESS
+    val lateFine = 99.0
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(Icons.Default.Cancel, null, tint = StatusCancelled, modifier = Modifier.size(24.dp))
+                Text("Cancel Service Booking", fontWeight = FontWeight.Bold)
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Please select a reason for cancelling #${if (booking.id.length >= 5) booking.id.takeLast(5) else booking.id} with ${booking.providerName}:",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
+                )
+
+                // Late Cancellation Fine Warning Banner
+                if (isServiceStarted) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = StatusCancelledBg,
+                        border = BorderStroke(1.dp, StatusCancelled.copy(alpha = 0.4f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(Icons.Default.Warning, null, tint = StatusCancelled, modifier = Modifier.size(16.dp))
+                                Text(
+                                    text = "Service Has Started (Late Cancellation)",
+                                    fontWeight = FontWeight.Bold,
+                                    color = StatusCancelled,
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            }
+                            Text(
+                                text = "Because the specialist has already commenced work on site, a cancellation fee of ₹${lateFine.toInt()} will be added to your next service booking for technician mobilization.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextPrimary,
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
+                } else {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = StatusAcceptedBg,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(Icons.Default.CheckCircle, null, tint = StatusAccepted, modifier = Modifier.size(14.dp))
+                            Text(
+                                text = "Free cancellation: No charges will be applied.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = StatusAccepted,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+
+                // Reasons List
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    reasons.forEachIndexed { index, reason ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { selectedReasonIndex = index }
+                                .padding(vertical = 4.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedReasonIndex == index,
+                                onClick = { selectedReasonIndex = index },
+                                colors = RadioButtonDefaults.colors(selectedColor = PrimaryBlue)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = reason,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextPrimary,
+                                fontWeight = if (selectedReasonIndex == index) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+
+                if (selectedReasonIndex == reasons.lastIndex) {
+                    OutlinedTextField(
+                        value = customReason,
+                        onValueChange = { customReason = it },
+                        label = { Text("Specify Reason") },
+                        placeholder = { Text("Describe the issue...") },
+                        maxLines = 2,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val finalReason = if (selectedReasonIndex == reasons.lastIndex && customReason.isNotBlank()) {
+                        customReason.trim()
+                    } else {
+                        reasons[selectedReasonIndex]
+                    }
+                    onConfirm(finalReason)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = StatusCancelled)
+            ) {
+                Text("Confirm Cancellation", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Keep Booking")
+            }
+        }
+    )
 }
 
 @Composable
@@ -1648,8 +1976,10 @@ fun CustomerBookingsScreen(
     onBackClick: () -> Unit,
     onBookingClick: (Booking) -> Unit = {}
 ) {
+    val context = LocalContext.current
     val bookings by repository.bookings.collectAsState()
     var selectedFilter by remember { mutableStateOf("All") }
+    var bookingToCancel by remember { mutableStateOf<Booking?>(null) }
 
     val filteredBookings = remember(bookings, selectedFilter) {
         when (selectedFilter) {
@@ -1737,13 +2067,31 @@ fun CustomerBookingsScreen(
                                 repository.acceptBooking(booking.id)
                             },
                             onCancelClick = {
-                                repository.cancelBooking(booking.id)
+                                bookingToCancel = booking
                             }
                         )
                     }
                 }
             }
         }
+    }
+
+    if (bookingToCancel != null) {
+        val target = bookingToCancel!!
+        CancellationReasonDialog(
+            booking = target,
+            onDismiss = { bookingToCancel = null },
+            onConfirm = { reason ->
+                val (_, feeApplied) = repository.cancelBookingWithDetails(target.id, reason)
+                bookingToCancel = null
+                val msg = if (feeApplied > 0.0) {
+                    "Booking cancelled. A ₹${feeApplied.toInt()} late fee was recorded for your next booking."
+                } else {
+                    "Booking successfully cancelled."
+                }
+                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+            }
+        )
     }
 }
 
@@ -1859,7 +2207,8 @@ fun BookingItemCard(
                         }
                     }
                 }
-            } else if (booking.status != BookingStatus.CANCELLED) {
+            } else if (booking.status == BookingStatus.ACCEPTED) {
+                // ACCEPTED: ONLY Start OTP is visible
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = SurfaceVariantLight,
@@ -1873,45 +2222,31 @@ fun BookingItemCard(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "START OTP",
+                                text = "START SERVICE OTP",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = PrimaryBlue,
                                 letterSpacing = 0.5.sp
                             )
-                            Text(
-                                text = booking.startOtp.ifBlank { "------" },
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = PrimaryBlue,
-                                fontFamily = FontFamily.Monospace
-                            )
-                        }
-
-                        Divider(
-                            modifier = Modifier
-                                .height(26.dp)
-                                .width(1.dp),
-                            color = CardBorder
-                        )
-
-                        Column {
-                            Text(
-                                text = "COMPLETION OTP",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = StatusCompleted,
-                                letterSpacing = 0.5.sp
-                            )
-                            Text(
-                                text = booking.completionOtp.ifBlank { "------" },
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = StatusCompleted,
-                                fontFamily = FontFamily.Monospace
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = booking.startOtp.ifBlank { "------" },
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = PrimaryBlue,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                                Text(
+                                    text = "• Share on arrival",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextSecondary
+                                )
+                            }
                         }
 
                         Button(
@@ -1925,6 +2260,84 @@ fun BookingItemCard(
                             Spacer(modifier = Modifier.width(2.dp))
                             Icon(Icons.Default.ArrowForward, null, modifier = Modifier.size(14.dp))
                         }
+                    }
+                }
+            } else if (booking.status == BookingStatus.IN_PROGRESS) {
+                // IN_PROGRESS: ONLY Completion OTP is visible
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = SurfaceVariantLight,
+                    border = BorderStroke(1.dp, CardBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "COMPLETION OTP (Work in Progress)",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = StatusCompleted,
+                                letterSpacing = 0.5.sp
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = booking.completionOtp.ifBlank { "------" },
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = StatusCompleted,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                                Text(
+                                    text = "• Share to finish job",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = onBookingClick,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = StatusCompleted),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text("Track", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Icon(Icons.Default.ArrowForward, null, modifier = Modifier.size(14.dp))
+                        }
+                    }
+                }
+            } else if (booking.status == BookingStatus.CANCELLED) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = StatusCancelledBg,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(Icons.Default.Cancel, null, tint = StatusCancelled, modifier = Modifier.size(16.dp))
+                        Text(
+                            text = if (booking.cancellationFee > 0)
+                                "Cancelled: ${booking.cancellationReason ?: "User requested"} (Late fine: ₹${booking.cancellationFee.toInt()})"
+                            else
+                                "Cancelled: ${booking.cancellationReason ?: "User requested"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = StatusCancelled,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }
@@ -1989,8 +2402,12 @@ fun BookingItemCard(
                 )
             }
 
-            // Quick Simulate Acceptance for testing notifications on device
-            if (booking.status == BookingStatus.PENDING) {
+            // Action Buttons (Cancel button available on all active bookings)
+            val isActiveBooking = booking.status == BookingStatus.PENDING ||
+                    booking.status == BookingStatus.ACCEPTED ||
+                    booking.status == BookingStatus.IN_PROGRESS
+
+            if (isActiveBooking) {
                 Divider(color = CardBorder)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -2000,20 +2417,37 @@ fun BookingItemCard(
                     OutlinedButton(
                         onClick = onCancelClick,
                         shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = StatusCancelled),
+                        border = BorderStroke(1.dp, StatusCancelled.copy(alpha = 0.5f)),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Cancel")
+                        Icon(Icons.Default.Cancel, null, modifier = Modifier.size(14.dp), tint = StatusCancelled)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Cancel", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = StatusCancelled)
                     }
 
-                    Button(
-                        onClick = onAcceptClick,
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = StatusAccepted),
-                        modifier = Modifier.weight(1.8f)
-                    ) {
-                        Icon(Icons.Default.NotificationsActive, null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Simulate Acceptance", fontSize = 12.sp)
+                    if (booking.status == BookingStatus.PENDING) {
+                        Button(
+                            onClick = onAcceptClick,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = StatusAccepted),
+                            modifier = Modifier.weight(1.8f)
+                        ) {
+                            Icon(Icons.Default.NotificationsActive, null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Simulate Acceptance", fontSize = 12.sp)
+                        }
+                    } else {
+                        Button(
+                            onClick = onBookingClick,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                            modifier = Modifier.weight(1.4f)
+                        ) {
+                            Icon(Icons.Default.Navigation, null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Live Track", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }

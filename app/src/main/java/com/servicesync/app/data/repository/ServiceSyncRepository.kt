@@ -47,6 +47,9 @@ class ServiceSyncRepository(private val context: Context) {
     private val _themeMode = MutableStateFlow<AppThemeMode>(AppThemeMode.SYSTEM)
     val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
 
+    private val _pendingCancellationFee = MutableStateFlow<Double>(0.0)
+    val pendingCancellationFee: StateFlow<Double> = _pendingCancellationFee.asStateFlow()
+
     init {
         loadOrInitializeData()
     }
@@ -198,6 +201,15 @@ class ServiceSyncRepository(private val context: Context) {
         } catch (e: Exception) {
             AppThemeMode.DARK
         }
+
+        // 8. Pending Cancellation Fee
+        val savedPendingFee = prefs.getFloat(KEY_PENDING_CANCELLATION_FEE, 0.0f).toDouble()
+        _pendingCancellationFee.value = savedPendingFee
+    }
+
+    fun savePendingCancellationFee(fee: Double) {
+        _pendingCancellationFee.value = fee
+        prefs.edit().putFloat(KEY_PENDING_CANCELLATION_FEE, fee.toFloat()).apply()
     }
 
     fun setThemeMode(mode: AppThemeMode) {
@@ -692,6 +704,11 @@ class ServiceSyncRepository(private val context: Context) {
                 )
             }
 
+        val appliedCancellationFee = _pendingCancellationFee.value
+        if (appliedCancellationFee > 0.0) {
+            savePendingCancellationFee(0.0)
+        }
+
         val booking = Booking(
             id = "bk_" + UUID.randomUUID().toString().take(8),
             customerId = user?.id ?: "cust_user",
@@ -708,7 +725,8 @@ class ServiceSyncRepository(private val context: Context) {
             status = BookingStatus.PENDING,
             hourlyRate = matchedProvider.hourlyRate,
             startOtp = startOtp,
-            completionOtp = completionOtp
+            completionOtp = completionOtp,
+            cancellationFee = appliedCancellationFee
         )
 
         val updatedBookings = listOf(booking) + _bookings.value
@@ -766,19 +784,54 @@ class ServiceSyncRepository(private val context: Context) {
         return true
     }
 
-    fun cancelBooking(bookingId: String): Boolean {
+    /**
+     * Cancels a booking with reason and calculates late cancellation penalty.
+     * If the service has already started (IN_PROGRESS), a ₹99 fine is recorded
+     * and applied to the customer's next service booking.
+     */
+    fun cancelBookingWithDetails(bookingId: String, reason: String = "Customer cancelled"): Pair<Boolean, Double> {
         val currentList = _bookings.value
         val targetIndex = currentList.indexOfFirst { it.id == bookingId }
-        if (targetIndex == -1) return false
+        if (targetIndex == -1) return Pair(false, 0.0)
 
         val currentBooking = currentList[targetIndex]
-        val updatedBooking = currentBooking.copy(status = BookingStatus.CANCELLED)
+        val feeApplied = if (currentBooking.status == BookingStatus.IN_PROGRESS) 99.0 else 0.0
+        if (feeApplied > 0.0) {
+            val newPending = _pendingCancellationFee.value + feeApplied
+            savePendingCancellationFee(newPending)
+        }
+
+        val updatedBooking = currentBooking.copy(
+            status = BookingStatus.CANCELLED,
+            cancellationReason = reason,
+            cancellationFee = feeApplied
+        )
         val updatedList = currentList.toMutableList().apply {
             set(targetIndex, updatedBooking)
         }
         _bookings.value = updatedList
         saveBookings(updatedList)
-        return true
+
+        val notifTitle = if (feeApplied > 0.0) "Booking Cancelled (₹${feeApplied.toInt()} Fine Applied)" else "Booking Cancelled"
+        val notifMessage = if (feeApplied > 0.0) {
+            "Your booking with ${currentBooking.providerName} was cancelled. Since the service had already started, a ₹${feeApplied.toInt()} technician mobilization fine was recorded and will be added to your next booking."
+        } else {
+            "Your booking with ${currentBooking.providerName} was cancelled ($reason). No cancellation charges were applied."
+        }
+        val cancelNotif = AppNotification(
+            id = UUID.randomUUID().toString(),
+            title = notifTitle,
+            message = notifMessage,
+            bookingId = currentBooking.id
+        )
+        _notifications.value = listOf(cancelNotif) + _notifications.value
+        saveNotifications(_notifications.value)
+
+        return Pair(true, feeApplied)
+    }
+
+    fun cancelBooking(bookingId: String): Boolean {
+        return cancelBookingWithDetails(bookingId).first
     }
 
     fun startBookingWithOtp(bookingId: String, otp: String): Boolean {
@@ -1111,6 +1164,7 @@ class ServiceSyncRepository(private val context: Context) {
         private const val KEY_WALLET_BALANCE = "key_wallet_balance_v1"
         private const val KEY_WALLET_TRANSACTIONS = "key_wallet_transactions_v1"
         private const val KEY_THEME_MODE = "key_theme_mode_v1"
+        private const val KEY_PENDING_CANCELLATION_FEE = "key_pending_cancellation_fee_v1"
 
         @Volatile
         private var INSTANCE: ServiceSyncRepository? = null

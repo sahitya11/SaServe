@@ -39,6 +39,7 @@ fun ServiceCatalogScreen(
 ) {
     val currentUser by repository.currentUser.collectAsState()
     val savedAddresses by repository.savedAddresses.collectAsState()
+    val pendingCancellationFee by repository.pendingCancellationFee.collectAsState()
 
     var selectedCategory by remember { mutableStateOf(initialCategory) }
     var catalogSearchQuery by remember { mutableStateOf("") }
@@ -496,6 +497,54 @@ fun ServiceCatalogScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
 
+                        // Previous Cancellation Penalty Alert (if applicable)
+                        if (pendingCancellationFee > 0.0) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = StatusCancelledBg,
+                                border = BorderStroke(1.dp, StatusCancelled.copy(alpha = 0.35f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(Icons.Default.Warning, null, tint = StatusCancelled, modifier = Modifier.size(16.dp))
+                                        Text(
+                                            text = "Previous Late Cancellation Fine",
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = StatusCancelled
+                                        )
+                                    }
+                                    Text(
+                                        text = "A fine of ₹${pendingCancellationFee.toInt()} from your previously cancelled in-progress service is applied to this booking.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = TextPrimary
+                                    )
+                                    HorizontalDivider(color = StatusCancelled.copy(alpha = 0.2f))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("Service Base:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                        Text(currentItem.price, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                    }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("Late Cancellation Fine:", style = MaterialTheme.typography.bodySmall, color = StatusCancelled)
+                                        Text("+ ₹${pendingCancellationFee.toInt()}", fontWeight = FontWeight.Bold, color = StatusCancelled)
+                                    }
+                                }
+                            }
+                        }
+
                         // Security Reassurance
                         Surface(
                             shape = RoundedCornerShape(10.dp),
@@ -551,7 +600,12 @@ fun ServiceCatalogScreen(
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                     ) {
-                        Text("Find Specialist Now 🚀", color = Color.White, fontWeight = FontWeight.Bold)
+                        val ctaLabel = if (pendingCancellationFee > 0.0) {
+                            "Find Specialist (incl. ₹${pendingCancellationFee.toInt()} fine) 🚀"
+                        } else {
+                            "Find Specialist Now 🚀"
+                        }
+                        Text(ctaLabel, color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             },

@@ -367,73 +367,113 @@ fun BookingStatusScreen(
                             }
                         }
 
-                        // OTP 2: Service Completion OTP
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = BackgroundLight,
-                            border = BorderStroke(1.dp, CardBorder),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(14.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                        // OTP 2: Service Completion OTP (Only revealed once service starts)
+                        if (booking.status == BookingStatus.ACCEPTED) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = BackgroundLight.copy(alpha = 0.6f),
+                                border = BorderStroke(1.dp, CardBorder.copy(alpha = 0.5f)),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Icon(Icons.Default.Lock, null, tint = TextMuted, modifier = Modifier.size(20.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "2. Completion OTP (Locked)",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = TextSecondary
+                                        )
+                                        Text(
+                                            text = "Revealed once work begins. Share after job completion.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = TextMuted
+                                        )
+                                    }
+                                    Text(
+                                        text = "••••",
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextMuted,
+                                        letterSpacing = 2.sp
+                                    )
+                                }
+                            }
+                        } else {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = BackgroundLight,
+                                border = BorderStroke(1.dp, CardBorder),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(Icons.Default.TaskAlt, null, tint = StatusCompleted, modifier = Modifier.size(18.dp))
-                                        Text(
-                                            text = "2. Completion OTP",
-                                            fontWeight = FontWeight.Bold,
-                                            style = MaterialTheme.typography.titleSmall
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(Icons.Default.TaskAlt, null, tint = StatusCompleted, modifier = Modifier.size(18.dp))
+                                            Text(
+                                                text = "2. Completion OTP",
+                                                fontWeight = FontWeight.Bold,
+                                                style = MaterialTheme.typography.titleSmall
+                                            )
+                                        }
+
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = StatusCompletedBg
+                                        ) {
+                                            Text(
+                                                text = booking.completionOtp,
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = StatusCompleted,
+                                                letterSpacing = 2.sp
+                                            )
+                                        }
                                     }
 
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = StatusCompletedBg
-                                    ) {
-                                        Text(
-                                            text = booking.completionOtp,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                            fontFamily = FontFamily.Monospace,
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            color = StatusCompleted,
-                                            letterSpacing = 2.sp
-                                        )
-                                    }
-                                }
+                                    Text(
+                                        text = if (booking.status == BookingStatus.COMPLETED)
+                                            "✓ Completion OTP verified! Booking successfully finalized."
+                                        else
+                                            "Share with specialist ONLY after the job is fully completed and inspected to finalize.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (booking.status == BookingStatus.COMPLETED) StatusCompleted else TextSecondary
+                                    )
 
-                                Text(
-                                    text = if (booking.status == BookingStatus.COMPLETED)
-                                        "✓ Completion OTP verified! Booking successfully finalized."
-                                    else
-                                        "Share with specialist ONLY after the job is fully done and inspected to finalize.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (booking.status == BookingStatus.COMPLETED) StatusCompleted else TextSecondary
-                                )
-
-                                if (booking.status == BookingStatus.IN_PROGRESS || booking.status == BookingStatus.ACCEPTED) {
-                                    Button(
-                                        onClick = {
-                                            showOtpDialogFor = "COMPLETION"
-                                            otpInput = booking.completionOtp
-                                            otpError = null
-                                        },
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = StatusCompleted),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Enter Completion OTP (Finish Job)", fontWeight = FontWeight.Bold)
+                                    if (booking.status == BookingStatus.IN_PROGRESS) {
+                                        Button(
+                                            onClick = {
+                                                showOtpDialogFor = "COMPLETION"
+                                                otpInput = booking.completionOtp
+                                                otpError = null
+                                            },
+                                            shape = RoundedCornerShape(8.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = StatusCompleted),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("Enter Completion OTP (Finish Job)", fontWeight = FontWeight.Bold)
+                                        }
                                     }
                                 }
                             }

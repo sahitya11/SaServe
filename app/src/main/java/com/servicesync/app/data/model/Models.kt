@@ -158,9 +158,11 @@ data class Booking(
     val startOtp: String = ((1000..9999).random()).toString(),
     val completionOtp: String = ((1000..9999).random()).toString(),
     val customerRating: Float? = null,
-    val customerReview: String? = null
+    val customerReview: String? = null,
+    val cancellationReason: String? = null,
+    val cancellationFee: Double = 0.0
 ) {
-    val totalAmount: Double get() = hourlyRate * estimatedHours
+    val totalAmount: Double get() = (hourlyRate * estimatedHours) + cancellationFee
 }
 
 data class AppNotification(
