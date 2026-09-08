@@ -61,26 +61,21 @@ fun AuthScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF000000))
-                    .padding(horizontal = 24.dp, vertical = 28.dp),
+                    .background(Color(0xFF090D16))
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.saserve_original_logo),
+                        painter = painterResource(id = R.drawable.saserve_logo),
                         contentDescription = "SaServe Logo",
-                        modifier = Modifier.fillMaxWidth(0.72f),
+                        modifier = Modifier
+                            .fillMaxWidth(0.65f)
+                            .aspectRatio(1f),
                         contentScale = ContentScale.Fit
-                    )
-
-                    Text(
-                        text = "Your Trusted Home Services Specialist",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFFCBD5E1),
-                        fontWeight = FontWeight.Medium
                     )
 
                     Surface(

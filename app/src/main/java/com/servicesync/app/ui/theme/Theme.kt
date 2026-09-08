@@ -15,11 +15,11 @@ import com.servicesync.app.data.model.AppThemeMode
 
 private val DarkColorScheme = lightColorScheme(
     primary = PrimaryBlue,
-    onPrimary = Color(0xFF000000),
-    primaryContainer = Color(0xFF132A38),
-    onPrimaryContainer = PrimaryBlue,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF1E293B),
+    onPrimaryContainer = AccentSky,
     secondary = SecondaryTeal,
-    onSecondary = Color(0xFF000000),
+    onSecondary = Color(0xFF090D16),
     tertiary = AccentSky,
     background = DarkBackground,
     surface = DarkSurface,

@@ -311,35 +311,30 @@ fun SplashScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF000000)),
+            .background(Color(0xFF090D16)),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(24.dp)
         ) {
-            // Official SaServe Logo (Clean original on pitch black)
+            // Official SaServe Logo Component with Spiral, SaServe Typography & Subtitle
             Image(
-                painter = painterResource(id = R.drawable.saserve_original_logo),
+                painter = painterResource(id = R.drawable.saserve_logo),
                 contentDescription = "SaServe Logo",
-                modifier = Modifier.fillMaxWidth(0.85f),
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .aspectRatio(1f),
                 contentScale = ContentScale.Fit
             )
 
-            Text(
-                text = "Specialist Home Services at Your Doorstep",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFFCBD5E1),
-                fontWeight = FontWeight.Medium
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             CircularProgressIndicator(
-                color = PrimaryBlue, // Radiant Cyan Blue
+                color = SecondaryTeal, // Electric Cyan
                 strokeWidth = 3.dp,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(32.dp)
             )
         }
     }
