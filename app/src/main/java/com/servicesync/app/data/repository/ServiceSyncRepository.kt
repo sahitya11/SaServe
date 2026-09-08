@@ -58,15 +58,22 @@ class ServiceSyncRepository(private val context: Context) {
         // Clear out old pre-seeded provider caches
         prefs.edit().remove("key_providers_list").remove("key_providers_list_inr").apply()
 
-        // 1. Providers: Only user-added providers are loaded
+        // 1. Providers: Seeded with realistic verified Indian specialists with varied ratings and reviews
         val savedProvidersJson = prefs.getString(KEY_CUSTOM_PROVIDERS, null)
         if (!savedProvidersJson.isNullOrEmpty()) {
             val type = object : TypeToken<List<ServiceProvider>>() {}.type
-            _providers.value = gson.fromJson(savedProvidersJson, type)
+            val loaded: List<ServiceProvider>? = gson.fromJson(savedProvidersJson, type)
+            if (!loaded.isNullOrEmpty()) {
+                _providers.value = loaded
+            } else {
+                val initial = getInitialIndianProviders()
+                _providers.value = initial
+                saveProviders(initial)
+            }
         } else {
-            // Start completely empty as requested: only providers the user adds are visible
-            _providers.value = emptyList()
-            saveProviders(emptyList())
+            val initial = getInitialIndianProviders()
+            _providers.value = initial
+            saveProviders(initial)
         }
 
         // 2. Bookings
@@ -1153,9 +1160,409 @@ class ServiceSyncRepository(private val context: Context) {
         }
     }
 
+    fun clearAllBookings() {
+        _bookings.value = emptyList()
+        prefs.edit().remove(KEY_CUSTOM_BOOKINGS).apply()
+    }
+
+    private fun getInitialIndianProviders(): List<ServiceProvider> {
+        return listOf(
+            // Electricians
+            ServiceProvider(
+                id = "prov_elec_1",
+                userId = "user_elec_1",
+                name = "Ramesh Sharma",
+                phone = "+91 98112 34567",
+                email = "ramesh.sharma@saserve.com",
+                category = ServiceCategory.ELECTRICIAN,
+                rating = 4.92f,
+                reviewCount = 184,
+                experienceYears = 8,
+                hourlyRate = 249.0,
+                bio = "Certified Senior Electrician. Expert in MCB tripping, fan installation, switchboard repair & home wiring safety audits.",
+                location = "Sector 14 (1.2 km away)",
+                distanceMiles = 0.8,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Ceiling Fans", "MCB Tripping Fix", "Switchboards", "Wiring Safety"),
+                reviews = listOf(
+                    Review("rev_1", "Ananya Roy", 5.0f, "Fixed my ceiling fan regulator and MCB tripping issue in 20 minutes. Very polite.", "2 days ago"),
+                    Review("rev_2", "Gaurav Verma", 4.8f, "Punctual and knowledgeable electrician. Clean work!", "1 week ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_elec_2",
+                userId = "user_elec_2",
+                name = "Rajesh Verma",
+                phone = "+91 98223 45678",
+                email = "rajesh.verma@saserve.com",
+                category = ServiceCategory.ELECTRICIAN,
+                rating = 4.81f,
+                reviewCount = 92,
+                experienceYears = 5,
+                hourlyRate = 199.0,
+                bio = "Specialist in false ceiling COB LED lights, chandelier assembly & heavy appliance socket lines.",
+                location = "Indira Nagar (2.5 km away)",
+                distanceMiles = 1.6,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("LED Lights", "Chandeliers", "AC Power Points"),
+                reviews = listOf(
+                    Review("rev_3", "Pooja Mehta", 5.0f, "Installed 8 recessed lights and repaired switchboard sparking. Great job.", "3 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_elec_3",
+                userId = "user_elec_3",
+                name = "Amit Patel",
+                phone = "+91 98334 56789",
+                email = "amit.patel@saserve.com",
+                category = ServiceCategory.ELECTRICIAN,
+                rating = 4.96f,
+                reviewCount = 240,
+                experienceYears = 10,
+                hourlyRate = 299.0,
+                bio = "Industrial & residential electrical safety specialist. Inverter wiring, geyser repair & earthing testing.",
+                location = "Civil Lines (0.8 km away)",
+                distanceMiles = 0.5,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Inverters", "Geysers", "Earthing & Short Circuit"),
+                reviews = listOf(
+                    Review("rev_4", "Kunal Bansal", 5.0f, "Quickly resolved an inverter backup fault that 2 other electricians could not find.", "Yesterday")
+                )
+            ),
+
+            // Plumbers
+            ServiceProvider(
+                id = "prov_plumb_1",
+                userId = "user_plumb_1",
+                name = "Sunil Kumar",
+                phone = "+91 98445 67890",
+                email = "sunil.kumar@saserve.com",
+                category = ServiceCategory.PLUMBER,
+                rating = 4.86f,
+                reviewCount = 130,
+                experienceYears = 7,
+                hourlyRate = 199.0,
+                bio = "Concealed pipe leakage detection, kitchen sink drain unclogging & bathroom diverter mixer repair.",
+                location = "Model Town (1.5 km away)",
+                distanceMiles = 0.9,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Pipe Leakage", "Diverter Mixers", "Drain Unclogging"),
+                reviews = listOf(
+                    Review("rev_5", "Deepak Chopra", 5.0f, "Replaced our dripping shower mixer smoothly without damaging wall tiles.", "4 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_plumb_2",
+                userId = "user_plumb_2",
+                name = "Deepak Joshi",
+                phone = "+91 98556 78901",
+                email = "deepak.joshi@saserve.com",
+                category = ServiceCategory.PLUMBER,
+                rating = 4.91f,
+                reviewCount = 210,
+                experienceYears = 9,
+                hourlyRate = 249.0,
+                bio = "High pressure water pumps, automatic float valves & complete toilet flush tank overhauls.",
+                location = "Rajendra Nagar (3.0 km away)",
+                distanceMiles = 1.9,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Water Pumps", "Flush Tanks", "Tank Cleaning"),
+                reviews = listOf(
+                    Review("rev_6", "Sonia Sengupta", 4.9f, "Very efficient! Fixed water pressure problem and installed jet spray.", "1 week ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_plumb_3",
+                userId = "user_plumb_3",
+                name = "Manoj Yadav",
+                phone = "+91 98667 89012",
+                email = "manoj.yadav@saserve.com",
+                category = ServiceCategory.PLUMBER,
+                rating = 4.75f,
+                reviewCount = 78,
+                experienceYears = 4,
+                hourlyRate = 149.0,
+                bio = "Affordable domestic plumbing, silicone sealing, washbasin trap cleaning & new tap fittings.",
+                location = "Gandhi Colony (2.1 km away)",
+                distanceMiles = 1.3,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Tap Repair", "Washbasin", "Silicone Sealing"),
+                reviews = listOf(
+                    Review("rev_7", "Rajat Goel", 4.7f, "Reasonable rates and fast service for kitchen sink blockage.", "2 weeks ago")
+                )
+            ),
+
+            // Carpenters
+            ServiceProvider(
+                id = "prov_carp_1",
+                userId = "user_carp_1",
+                name = "Mohan Lal Suthar",
+                phone = "+91 98778 90123",
+                email = "mohan.suthar@saserve.com",
+                category = ServiceCategory.CARPENTER,
+                rating = 4.93f,
+                reviewCount = 310,
+                experienceYears = 14,
+                hourlyRate = 299.0,
+                bio = "Master wood craftsman. Modular kitchen telescopic runners, mortise locks & custom wardrobe hydraulic hinges.",
+                location = "Kirti Nagar (1.8 km away)",
+                distanceMiles = 1.1,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Mortise Locks", "Modular Kitchen", "Wardrobe Channels"),
+                reviews = listOf(
+                    Review("rev_8", "Meera Krishnan", 5.0f, "Repaired our sagging wardrobe door and aligned the mortise lock perfectly.", "3 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_carp_2",
+                userId = "user_carp_2",
+                name = "Anil Chauhan",
+                phone = "+91 98889 01234",
+                email = "anil.chauhan@saserve.com",
+                category = ServiceCategory.CARPENTER,
+                rating = 4.82f,
+                reviewCount = 115,
+                experienceYears = 6,
+                hourlyRate = 249.0,
+                bio = "Furniture assembly (IKEA, Urban Ladder), hydraulic bed lift support & sliding window track repair.",
+                location = "Subhash Nagar (2.4 km away)",
+                distanceMiles = 1.5,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Furniture Assembly", "Bed Hydraulics", "Window Mesh"),
+                reviews = listOf(
+                    Review("rev_9", "Vikas Malhotra", 4.8f, "Assembled king size storage bed and study table cleanly.", "5 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_carp_3",
+                userId = "user_carp_3",
+                name = "Suresh Sharma",
+                phone = "+91 98990 12345",
+                email = "suresh.sharma@saserve.com",
+                category = ServiceCategory.CARPENTER,
+                rating = 4.70f,
+                reviewCount = 64,
+                experienceYears = 5,
+                hourlyRate = 199.0,
+                bio = "Door latch alignment, wood touchups, teak PU clear polish & floating wall shelf mounting.",
+                location = "Shastri Nagar (3.2 km away)",
+                distanceMiles = 2.0,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Wall Drill Work", "Wood Touchup", "Door Latches"),
+                reviews = listOf(
+                    Review("rev_10", "Sneha Rao", 5.0f, "Mounted 4 heavy floating shelves securely without any wall cracks.", "1 week ago")
+                )
+            ),
+
+            // Mechanics
+            ServiceProvider(
+                id = "prov_mech_1",
+                userId = "user_mech_1",
+                name = "Vikram Singh Rathore",
+                phone = "+91 98101 23456",
+                email = "vikram.rathore@saserve.com",
+                category = ServiceCategory.MECHANIC,
+                rating = 4.95f,
+                reviewCount = 275,
+                experienceYears = 11,
+                hourlyRate = 399.0,
+                bio = "Automotive engineer. Engine diagnostic scan, synthetic oil replacement & disc brake skimming.",
+                location = "Automobile Hub (2.0 km away)",
+                distanceMiles = 1.2,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Engine Diagnostics", "Brake Pad Change", "Synthetic Oil"),
+                reviews = listOf(
+                    Review("rev_11", "Arjun Kapoor", 5.0f, "Identified check engine light code and changed brake pads at home. Super convenient!", "Yesterday")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_mech_2",
+                userId = "user_mech_2",
+                name = "Pradeep Yadav",
+                phone = "+91 98212 34567",
+                email = "pradeep.yadav@saserve.com",
+                category = ServiceCategory.MECHANIC,
+                rating = 4.80f,
+                reviewCount = 142,
+                experienceYears = 7,
+                hourlyRate = 249.0,
+                bio = "Two-wheeler master mechanic. Royal Enfield tuning, carburettor cleaning, brake cable & oil service.",
+                location = "Station Road (1.1 km away)",
+                distanceMiles = 0.7,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Two Wheeler Tuneup", "Carburettor Tuning", "Chain Lubrication"),
+                reviews = listOf(
+                    Review("rev_12", "Mohit Jain", 4.8f, "Tuned my Bullet 350 engine smoothly, starts on first kick now.", "4 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_mech_3",
+                userId = "user_mech_3",
+                name = "Rahul Saxena",
+                phone = "+91 98323 45678",
+                email = "rahul.saxena@saserve.com",
+                category = ServiceCategory.MECHANIC,
+                rating = 4.88f,
+                reviewCount = 89,
+                experienceYears = 6,
+                hourlyRate = 299.0,
+                bio = "Car AC cooling recharge, emergency SOS battery jumpstart & 50-point pre-trip inspection.",
+                location = "Highway Bypass (4.0 km away)",
+                distanceMiles = 2.5,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Battery Jumpstart", "Tyre Punctures", "Pre-Trip Inspection"),
+                reviews = listOf(
+                    Review("rev_13", "Sanjay Nair", 5.0f, "Jumpstarted my car battery in 15 minutes on a rainy morning.", "6 days ago")
+                )
+            ),
+
+            // Appliance Repair
+            ServiceProvider(
+                id = "prov_app_1",
+                userId = "user_app_1",
+                name = "Amit Saini",
+                phone = "+91 98434 56789",
+                email = "amit.saini@saserve.com",
+                category = ServiceCategory.APPLIANCE_REPAIR,
+                rating = 4.90f,
+                reviewCount = 198,
+                experienceYears = 8,
+                hourlyRate = 349.0,
+                bio = "Certified appliance technician. Single/double door fridge cooling, thermostat & washing machine spin drum repair.",
+                location = "Vikas Puri (1.4 km away)",
+                distanceMiles = 0.9,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Refrigerator Fix", "Washing Machine Drum", "Thermostats"),
+                reviews = listOf(
+                    Review("rev_14", "Ritika Saxena", 5.0f, "My front load washing machine stopped spinning; Amit replaced the capacitor and drum belt.", "2 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_app_2",
+                userId = "user_app_2",
+                name = "Sandeep Tiwari",
+                phone = "+91 98545 67890",
+                email = "sandeep.tiwari@saserve.com",
+                category = ServiceCategory.APPLIANCE_REPAIR,
+                rating = 4.83f,
+                reviewCount = 160,
+                experienceYears = 7,
+                hourlyRate = 399.0,
+                bio = "Air Conditioner deep jet clean, split AC gas refill & copper pipe leakage brazing specialist.",
+                location = "Janakpuri (2.8 km away)",
+                distanceMiles = 1.7,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("AC Jet Cleaning", "Gas Recharge", "Copper Brazing"),
+                reviews = listOf(
+                    Review("rev_15", "Hemant Pandey", 4.9f, "Thorough AC jet pump cleaning, cooling is ice-cold now.", "3 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_app_3",
+                userId = "user_app_3",
+                name = "Neeraj Gupta",
+                phone = "+91 98656 78901",
+                email = "neeraj.gupta@saserve.com",
+                category = ServiceCategory.APPLIANCE_REPAIR,
+                rating = 4.78f,
+                reviewCount = 85,
+                experienceYears = 5,
+                hourlyRate = 299.0,
+                bio = "Microwave magnetron fix, RO water purifier multi-stage filter change & LED TV display repair.",
+                location = "Preet Vihar (3.5 km away)",
+                distanceMiles = 2.2,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("RO Filter Change", "Microwave Heating", "Smart TV Panels"),
+                reviews = listOf(
+                    Review("rev_16", "Alok Sinha", 4.8f, "Replaced RO sediment and carbon filters, TDS balanced accurately.", "1 week ago")
+                )
+            ),
+
+            // Painters
+            ServiceProvider(
+                id = "prov_paint_1",
+                userId = "user_paint_1",
+                name = "Rajesh Patel",
+                phone = "+91 98767 89012",
+                email = "rajesh.patel@saserve.com",
+                category = ServiceCategory.PAINTER,
+                rating = 4.92f,
+                reviewCount = 220,
+                experienceYears = 12,
+                hourlyRate = 449.0,
+                bio = "Luxury wall textures, stencils, terrace waterproofing & anti-fungal dampness treatment.",
+                location = "Lajpat Nagar (2.2 km away)",
+                distanceMiles = 1.4,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Texture Walls", "Waterproofing", "Dampness Fix"),
+                reviews = listOf(
+                    Review("rev_17", "Divya Nambiar", 5.0f, "Beautiful metallic texture feature wall in my living room!", "3 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_paint_2",
+                userId = "user_paint_2",
+                name = "Santosh Kumar",
+                phone = "+91 98878 90123",
+                email = "santosh.kumar@saserve.com",
+                category = ServiceCategory.PAINTER,
+                rating = 4.76f,
+                reviewCount = 95,
+                experienceYears = 6,
+                hourlyRate = 349.0,
+                bio = "Single room quick repaint, Asian Paints Royale/Apex emulsion, masking tape clean borders.",
+                location = "Mayur Vihar (3.1 km away)",
+                distanceMiles = 1.9,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Room Repainting", "Asian Paints Emulsion", "Masking Cleanliness"),
+                reviews = listOf(
+                    Review("rev_18", "Tarun Bajaj", 4.7f, "Repainted bedroom in 1 day with zero paint splatters on the floor.", "5 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_paint_3",
+                userId = "user_paint_3",
+                name = "Mahendra Verma",
+                phone = "+91 98989 01234",
+                email = "mahendra.verma@saserve.com",
+                category = ServiceCategory.PAINTER,
+                rating = 4.85f,
+                reviewCount = 140,
+                experienceYears = 9,
+                hourlyRate = 399.0,
+                bio = "Exterior weatherproof coats, anti-rust grill enamel spraying & wood PU touchups.",
+                location = "Rohini (4.5 km away)",
+                distanceMiles = 2.8,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Exterior Emulsion", "Anti-Rust Enamel", "Wood Staining"),
+                reviews = listOf(
+                    Review("rev_19", "Bhavna Joshi", 5.0f, "Sprayed enamel on balcony metal railings, looks brand new.", "1 week ago")
+                )
+            )
+        )
+    }
+
     companion object {
-        private const val KEY_CUSTOM_PROVIDERS = "key_custom_providers_only_v2"
-        private const val KEY_CUSTOM_BOOKINGS = "key_custom_bookings_v2"
+        private const val KEY_CUSTOM_PROVIDERS = "key_custom_providers_indian_v3"
+        private const val KEY_CUSTOM_BOOKINGS = "key_custom_bookings_v4"
         private const val KEY_NOTIFICATIONS = "key_notifications_list"
         private const val KEY_CURRENT_USER = "key_current_user"
         private const val KEY_REGISTERED_USERS = "key_registered_users_v2"

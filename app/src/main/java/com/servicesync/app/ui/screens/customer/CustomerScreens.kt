@@ -103,8 +103,13 @@ fun CustomerHomeScreen(
         drawerContent = {
             ModalDrawerSheet(
                 drawerContainerColor = SurfaceLight,
-                modifier = Modifier.width(310.dp)
+                modifier = Modifier.width(300.dp)
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                ) {
                 // Drawer Header with adaptive background for perfect contrast in both Light & Dark modes
                 Box(
                     modifier = Modifier
@@ -153,21 +158,17 @@ fun CustomerHomeScreen(
                                 }
                             }
 
-                            // Quick Edit Profile button in header
-                            IconButton(
-                                onClick = {
-                                    coroutineScope.launch { drawerState.close() }
-                                    showProfileDialog = true
-                                },
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(PrimaryBlue.copy(alpha = 0.12f), CircleShape)
+                            // Clean Verified Customer Badge in Header
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = PrimaryBlue.copy(alpha = 0.15f)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = "Edit Profile",
-                                    tint = PrimaryBlue,
-                                    modifier = Modifier.size(18.dp)
+                                Text(
+                                    text = "VERIFIED",
+                                    color = PrimaryBlue,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                 )
                             }
                         }
@@ -219,7 +220,7 @@ fun CustomerHomeScreen(
 
                 // Navigation Items - My Profile first
                 NavigationDrawerItem(
-                    label = { Text("My Profile", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("My Profile", fontSize = 13.sp, fontWeight = FontWeight.SemiBold) },
                     selected = false,
                     onClick = {
                         coroutineScope.launch { drawerState.close() }
@@ -243,7 +244,7 @@ fun CustomerHomeScreen(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
                 )
                 NavigationDrawerItem(
-                    label = { Text("My Bookings", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("My Bookings", fontSize = 13.sp, fontWeight = FontWeight.SemiBold) },
                     selected = false,
                     onClick = {
                         coroutineScope.launch { drawerState.close() }
@@ -270,7 +271,7 @@ fun CustomerHomeScreen(
                 )
 
                 NavigationDrawerItem(
-                    label = { Text("Payment & Wallet", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("Payment & Wallet", fontSize = 13.sp, fontWeight = FontWeight.SemiBold) },
                     selected = false,
                     onClick = {
                         coroutineScope.launch { drawerState.close() }
@@ -289,7 +290,7 @@ fun CustomerHomeScreen(
                 )
 
                 NavigationDrawerItem(
-                    label = { Text("Manage Addresses", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("Manage Addresses", fontSize = 13.sp, fontWeight = FontWeight.SemiBold) },
                     selected = false,
                     onClick = {
                         coroutineScope.launch { drawerState.close() }
@@ -316,7 +317,7 @@ fun CustomerHomeScreen(
                 )
 
                 NavigationDrawerItem(
-                    label = { Text("Help & Support", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("Help & Support", fontSize = 13.sp, fontWeight = FontWeight.SemiBold) },
                     selected = false,
                     onClick = {
                         coroutineScope.launch { drawerState.close() }
@@ -327,7 +328,7 @@ fun CustomerHomeScreen(
                 )
 
                 NavigationDrawerItem(
-                    label = { Text("Rate Us on Play Store", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("Rate Us on Play Store", fontSize = 13.sp, fontWeight = FontWeight.SemiBold) },
                     selected = false,
                     onClick = {
                         coroutineScope.launch { drawerState.close() }
@@ -349,18 +350,7 @@ fun CustomerHomeScreen(
                 )
 
                 NavigationDrawerItem(
-                    label = { Text("Add Service Specialist", fontWeight = FontWeight.SemiBold) },
-                    selected = false,
-                    onClick = {
-                        coroutineScope.launch { drawerState.close() }
-                        onAddProviderClick()
-                    },
-                    icon = { Icon(Icons.Default.PersonAdd, contentDescription = null, tint = PrimaryBlue) },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
-                )
-
-                NavigationDrawerItem(
-                    label = { Text("Settings", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("Settings", fontSize = 13.sp, fontWeight = FontWeight.SemiBold) },
                     selected = false,
                     onClick = {
                         coroutineScope.launch { drawerState.close() }
@@ -382,10 +372,10 @@ fun CustomerHomeScreen(
                     Text("✉️ sahaditya1804@gmail.com", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 NavigationDrawerItem(
-                    label = { Text("Logout", color = StatusCancelled, fontWeight = FontWeight.Bold) },
+                    label = { Text("Logout", fontSize = 13.sp, color = StatusCancelled, fontWeight = FontWeight.Bold) },
                     selected = false,
                     onClick = {
                         coroutineScope.launch { drawerState.close() }
@@ -394,6 +384,7 @@ fun CustomerHomeScreen(
                     icon = { Icon(Icons.Default.Logout, contentDescription = null, tint = StatusCancelled) },
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)
                 )
+                }
             }
         }
     ) {
@@ -718,41 +709,7 @@ fun CustomerHomeScreen(
                 }
             }
 
-            // Quick Service Filters (using vibrant brand blue PrimaryBlue #2563EB)
-            item {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    val filterOptions = listOf("All", "Top Rated (4.9+)", "Available Now", "Instant Dispatch")
-                    items(filterOptions) { filter ->
-                        val isSelected = selectedFilter == filter
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { selectedFilter = filter },
-                            label = {
-                                Text(
-                                    text = filter,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = SurfaceLight,
-                                labelColor = TextPrimary,
-                                selectedContainerColor = PrimaryBlue,
-                                selectedLabelColor = Color.White
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = isSelected,
-                                borderColor = CardBorder,
-                                selectedBorderColor = PrimaryBlue
-                            ),
-                            shape = RoundedCornerShape(20.dp)
-                        )
-                    }
-                }
-            }
+
 
             // Promotional Highlights & Security Carousel
             item {
@@ -1056,6 +1013,17 @@ fun CommonApplianceFixCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val gradientColors = remember(category) {
+        when (category) {
+            ServiceCategory.ELECTRICIAN -> listOf(Color(0xFF1E3A8A), Color(0xFF2563EB), Color(0xFF06B6D4))
+            ServiceCategory.PLUMBER -> listOf(Color(0xFF0C4A6E), Color(0xFF0284C7), Color(0xFF38BDF8))
+            ServiceCategory.CARPENTER -> listOf(Color(0xFF78350F), Color(0xFFB45309), Color(0xFFF59E0B))
+            ServiceCategory.MECHANIC -> listOf(Color(0xFF881337), Color(0xFFE11D48), Color(0xFFFB7185))
+            ServiceCategory.APPLIANCE_REPAIR -> listOf(Color(0xFF064E3B), Color(0xFF059669), Color(0xFF34D399))
+            ServiceCategory.PAINTER -> listOf(Color(0xFF581C87), Color(0xFF9333EA), Color(0xFFC084FC))
+        }
+    }
+
     Card(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
@@ -1065,79 +1033,117 @@ fun CommonApplianceFixCard(
         border = BorderStroke(1.dp, CardBorder),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Visual Graphic Illustration Image Banner
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(96.dp)
+                    .background(androidx.compose.ui.graphics.Brush.linearGradient(gradientColors)),
+                contentAlignment = Alignment.Center
             ) {
+                // Background concentric glowing circles
                 Box(
                     modifier = Modifier
-                        .size(38.dp)
+                        .size(80.dp)
                         .clip(CircleShape)
-                        .background(PrimaryBlue.copy(alpha = 0.12f)),
+                        .background(Color.White.copy(alpha = 0.12f))
+                )
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.20f))
+                )
+                // Center Appliance Emblem
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.95f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(item.icon, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = item.name,
+                        tint = gradientColors[1],
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
 
+                // Category Tag Ribbon
                 Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = PrimaryBlue.copy(alpha = 0.12f)
+                    shape = RoundedCornerShape(bottomStart = 8.dp),
+                    color = Color.Black.copy(alpha = 0.45f),
+                    modifier = Modifier.align(Alignment.TopEnd)
                 ) {
                     Text(
-                        text = item.price,
-                        color = PrimaryBlue,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 12.sp,
+                        text = category.displayName.uppercase(),
+                        color = Color.White,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            // Card Body Details
+            Column(
+                modifier = Modifier.padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 Text(
                     text = item.name,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary,
-                    maxLines = 1
+                    maxLines = 1,
+                    fontSize = 13.sp
                 )
-                Text(
-                    text = "${category.displayName} • ${item.duration}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextSecondary,
-                    maxLines = 1
-                )
-            }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFF59E0B), modifier = Modifier.size(13.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Icon(Icons.Default.Star, null, tint = Color(0xFFF59E0B), modifier = Modifier.size(12.dp))
+                        Text(
+                            text = item.rating.replace(" ★", ""),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                    }
+
                     Text(
-                        text = item.rating.replace(" ★", ""),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        text = item.price,
+                        color = PrimaryBlue,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 13.sp
                     )
                 }
 
-                Text(
-                    text = "Book Now ➔",
-                    color = PrimaryBlue,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = PrimaryBlue.copy(alpha = 0.12f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { onClick() }
+                ) {
+                    Text(
+                        text = "Book Now ➔",
+                        color = PrimaryBlue,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 5.dp)
+                    )
+                }
             }
         }
     }
@@ -1977,7 +1983,15 @@ fun CustomerBookingsScreen(
     onBookingClick: (Booking) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val bookings by repository.bookings.collectAsState()
+    val currentUser by repository.currentUser.collectAsState()
+    val allBookings by repository.bookings.collectAsState()
+
+    // Filter strictly by current logged-in customer account
+    val bookings = remember(allBookings, currentUser) {
+        val uid = currentUser?.id ?: "cust_user"
+        allBookings.filter { it.customerId == uid }
+    }
+
     var selectedFilter by remember { mutableStateOf("All") }
     var bookingToCancel by remember { mutableStateOf<Booking?>(null) }
 
@@ -1986,6 +2000,7 @@ fun CustomerBookingsScreen(
             "Pending" -> bookings.filter { it.status == BookingStatus.PENDING }
             "Accepted" -> bookings.filter { it.status == BookingStatus.ACCEPTED || it.status == BookingStatus.IN_PROGRESS }
             "Completed" -> bookings.filter { it.status == BookingStatus.COMPLETED }
+            "Cancelled" -> bookings.filter { it.status == BookingStatus.CANCELLED }
             else -> bookings
         }
     }
@@ -1993,7 +2008,7 @@ fun CustomerBookingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Service Bookings") },
+                title = { Text("My Service Bookings", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -2009,18 +2024,26 @@ fun CustomerBookingsScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Filter tabs
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            // Responsive scrollable filter tabs (prevents "Completed" from clipping on any screen)
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                listOf("All", "Pending", "Accepted", "Completed").forEach { statusLabel ->
+                val filterList = listOf("All", "Pending", "Accepted", "Completed", "Cancelled")
+                items(filterList) { statusLabel ->
+                    val isSelected = selectedFilter == statusLabel
                     FilterChip(
-                        selected = selectedFilter == statusLabel,
+                        selected = isSelected,
                         onClick = { selectedFilter = statusLabel },
-                        label = { Text(statusLabel) },
+                        label = {
+                            Text(
+                                text = statusLabel,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                            )
+                        },
+                        shape = RoundedCornerShape(20.dp),
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = PrimaryBlue,
                             selectedLabelColor = Color.White
@@ -2317,6 +2340,45 @@ fun BookingItemCard(
                         }
                     }
                 }
+            } else if (booking.status == BookingStatus.COMPLETED) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = StatusCompletedBg,
+                    border = BorderStroke(1.dp, StatusCompleted.copy(alpha = 0.3f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(Icons.Default.CheckCircle, null, tint = StatusCompleted, modifier = Modifier.size(16.dp))
+                            Text(
+                                text = "Service Successfully Completed",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = StatusCompleted,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        Button(
+                            onClick = onBookingClick,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = StatusCompleted),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            modifier = Modifier.height(28.dp)
+                        ) {
+                            Text("Invoice", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             } else if (booking.status == BookingStatus.CANCELLED) {
                 Surface(
                     shape = RoundedCornerShape(8.dp),
@@ -2336,7 +2398,8 @@ fun BookingItemCard(
                                 "Cancelled: ${booking.cancellationReason ?: "User requested"}",
                             style = MaterialTheme.typography.bodySmall,
                             color = StatusCancelled,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 11.sp
                         )
                     }
                 }
