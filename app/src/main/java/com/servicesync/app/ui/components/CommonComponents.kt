@@ -145,7 +145,7 @@ fun CategoryCard(
                 Icon(
                     imageVector = getCategoryIcon(category),
                     contentDescription = category.displayName,
-                    tint = if (isSelected) Color(0xFF0A0C0E) else PrimaryBlue,
+                    tint = if (isSelected) Color.White else PrimaryBlue,
                     modifier = Modifier.size(26.dp)
                 )
             }
