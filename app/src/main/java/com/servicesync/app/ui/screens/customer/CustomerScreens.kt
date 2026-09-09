@@ -581,7 +581,7 @@ fun CustomerHomeScreen(
                 }
             }
 
-            // Dispersed Edge-to-Edge Human Clay Specialists Showcase Banner (No text on image, pure clay art)
+            // Dispersed Edge-to-Edge Human Clay Specialists Showcase Banner (No text on image or below, pure visual art)
             item {
                 Card(
                     modifier = Modifier
@@ -592,59 +592,18 @@ fun CustomerHomeScreen(
                     border = BorderStroke(1.2.dp, CardBorder),
                     elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                 ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        // High-Impact Screen-Dispersed Clay Art Frame
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(210.dp)
-                                .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
-                                .background(SurfaceVariantLight)
-                        ) {
-                            androidx.compose.foundation.Image(
-                                painter = androidx.compose.ui.res.painterResource(id = com.servicesync.app.R.drawable.clay_specialists_team),
-                                contentDescription = "SaServe Clay Service Specialists Team",
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-
-                        // Refined Bottom Caption Bar
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Verified Home Specialists",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = TextPrimary
-                                )
-                                Text(
-                                    text = "Equipped with professional tools for instant doorstep service",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = TextSecondary,
-                                    fontSize = 11.5.sp
-                                )
-                            }
-
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = PrimaryBlue.copy(alpha = 0.12f)
-                            ) {
-                                Text(
-                                    text = "Book Pro ➔",
-                                    color = PrimaryBlue,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                                )
-                            }
-                        }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(205.dp)
+                            .clip(RoundedCornerShape(22.dp))
+                    ) {
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(id = com.servicesync.app.R.drawable.clay_specialists_team),
+                            contentDescription = "SaServe Specialists Team",
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
                 }
             }
