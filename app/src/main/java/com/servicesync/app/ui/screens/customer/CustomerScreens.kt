@@ -581,112 +581,67 @@ fun CustomerHomeScreen(
                 }
             }
 
-            // Clay Specialists Hero Banner (Carpenter, Plumber, Electrician, Painter, Mechanic with their tools)
+            // Dispersed Edge-to-Edge Human Clay Specialists Showcase Banner (No text on image, pure clay art)
             item {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 0.dp),
+                    shape = RoundedCornerShape(22.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfaceLight),
                     border = BorderStroke(1.2.dp, CardBorder),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        // 16:9 Well-Fitted Panoramic Clay Art
+                        // High-Impact Screen-Dispersed Clay Art Frame
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .aspectRatio(16f / 9f)
-                                .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                                .height(210.dp)
+                                .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
                                 .background(SurfaceVariantLight)
                         ) {
                             androidx.compose.foundation.Image(
                                 painter = androidx.compose.ui.res.painterResource(id = com.servicesync.app.R.drawable.clay_specialists_team),
-                                contentDescription = "SaServe Clay Specialists - Electrician, Plumber, Carpenter, Painter, Mechanic with tools",
+                                contentDescription = "SaServe Clay Service Specialists Team",
                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize()
                             )
-
-                            // Top Left Clay Quality Pill
-                            Surface(
-                                shape = RoundedCornerShape(bottomEnd = 12.dp, topStart = 20.dp),
-                                color = PrimaryBlue,
-                                modifier = Modifier.align(Alignment.TopStart)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Icon(Icons.Default.Verified, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
-                                    Text(
-                                        text = "VERIFIED SPECIALISTS",
-                                        color = Color.White,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 10.sp,
-                                        letterSpacing = 0.5.sp
-                                    )
-                                }
-                            }
-
-                            // Bottom Glassmorphic Label Bar
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .align(Alignment.BottomCenter),
-                                color = Color.Black.copy(alpha = 0.55f)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "⚡ Electrician • Plumber • Carpenter • Painter • Mechanic",
-                                        color = Color.White,
-                                        fontSize = 10.5.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "Equipped & Ready",
-                                        color = Color(0xFF38BDF8),
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.ExtraBold
-                                    )
-                                }
-                            }
                         }
 
-                        // Banner Description & Quick CTA
+                        // Refined Bottom Caption Bar
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "On-Demand Household Masters",
+                                    text = "Verified Home Specialists",
                                     style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.ExtraBold,
                                     color = TextPrimary
                                 )
                                 Text(
-                                    text = "Background-checked pros with complete professional toolkits",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = TextSecondary
+                                    text = "Equipped with professional tools for instant doorstep service",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextSecondary,
+                                    fontSize = 11.5.sp
                                 )
                             }
+
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
                                 color = PrimaryBlue.copy(alpha = 0.12f)
                             ) {
                                 Text(
-                                    text = "At Your Doorstep ➔",
+                                    text = "Book Pro ➔",
                                     color = PrimaryBlue,
-                                    fontSize = 11.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                                 )
                             }
                         }
