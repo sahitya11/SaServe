@@ -375,12 +375,20 @@ fun ServiceCatalogScreen(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(42.dp)
-                                        .clip(CircleShape)
-                                        .background(PrimaryBlue),
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(SurfaceVariantLight)
+                                        .border(1.dp, CardBorder, RoundedCornerShape(10.dp)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(currentItem.icon, null, tint = Color.White, modifier = Modifier.size(22.dp))
+                                    androidx.compose.foundation.Image(
+                                        painter = androidx.compose.ui.res.painterResource(
+                                            id = com.servicesync.app.ui.components.getApplianceClayDrawable(currentItem.id)
+                                        ),
+                                        contentDescription = currentItem.name,
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
@@ -776,44 +784,29 @@ fun ApplianceCatalogCard(
 }
 
 /**
- * Visual illustration image box for each appliance with themed gradient backdrop, glowing emblem, and badges.
+ * Visual illustration image box for each appliance with authentic 3D claymorphic image, smooth rounded container, and badges.
  */
 @Composable
 fun ApplianceVisualBadge(
     item: SubServiceItem,
     category: ServiceCategory
 ) {
-    val gradient = when (category) {
-        ServiceCategory.ELECTRICIAN -> listOf(Color(0xFF0F172A), Color(0xFF1E3A8A))
-        ServiceCategory.PLUMBER -> listOf(Color(0xFF0C1D36), Color(0xFF0369A1))
-        ServiceCategory.CARPENTER -> listOf(Color(0xFF1C1917), Color(0xFF78350F))
-        ServiceCategory.MECHANIC -> listOf(Color(0xFF18181B), Color(0xFF1E293B))
-        ServiceCategory.APPLIANCE_REPAIR -> listOf(Color(0xFF0F172A), Color(0xFF312E81))
-        ServiceCategory.PAINTER -> listOf(Color(0xFF1E1B4B), Color(0xFF4C1D95))
-    }
+    val clayResId = com.servicesync.app.ui.components.getApplianceClayDrawable(item.id)
 
     Box(
         modifier = Modifier
             .size(105.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(Brush.radialGradient(gradient))
-            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(14.dp)),
+            .background(SurfaceVariantLight)
+            .border(1.dp, CardBorder, RoundedCornerShape(14.dp)),
         contentAlignment = Alignment.Center
     ) {
-        // Soft glowing circle background
-        Box(
-            modifier = Modifier
-                .size(60.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.08f))
-        )
-
-        // Center Appliance Icon
-        Icon(
-            imageVector = item.icon,
+        // High-Quality 3D Claymorphic Appliance Image
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(id = clayResId),
             contentDescription = item.name,
-            tint = Color.White,
-            modifier = Modifier.size(34.dp)
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
         )
 
         // Tag Ribbon (e.g. BESTSELLER / POPULAR)
@@ -833,18 +826,18 @@ fun ApplianceVisualBadge(
             }
         }
 
-        // Bottom Verified Pro Micro-label
+        // Bottom Verified Pro Micro-label with soft frosted glass backing
         Surface(
             shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
-            color = Color.Black.copy(alpha = 0.6f),
+            color = Color.Black.copy(alpha = 0.65f),
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
             Text(
-                text = "VERIFIED PRO",
-                color = Color.White.copy(alpha = 0.85f),
+                text = "CLAY 3D • VERIFIED",
+                color = Color.White.copy(alpha = 0.95f),
                 fontSize = 8.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.5.dp)
             )
         }
     }

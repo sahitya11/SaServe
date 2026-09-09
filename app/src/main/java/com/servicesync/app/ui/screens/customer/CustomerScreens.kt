@@ -672,12 +672,20 @@ fun CustomerHomeScreen(
                                         ) {
                                             Box(
                                                 modifier = Modifier
-                                                    .size(36.dp)
-                                                    .clip(CircleShape)
-                                                    .background(PrimaryBlue.copy(alpha = 0.12f)),
+                                                    .size(40.dp)
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(SurfaceVariantLight)
+                                                    .border(1.dp, CardBorder, RoundedCornerShape(8.dp)),
                                                 contentAlignment = Alignment.Center
                                             ) {
-                                                Icon(subItem.icon, null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                                                androidx.compose.foundation.Image(
+                                                    painter = androidx.compose.ui.res.painterResource(
+                                                        id = com.servicesync.app.ui.components.getApplianceClayDrawable(subItem.id)
+                                                    ),
+                                                    contentDescription = subItem.name,
+                                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                                    modifier = Modifier.fillMaxSize()
+                                                )
                                             }
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text(subItem.name, fontWeight = FontWeight.Bold, color = TextPrimary, fontSize = 13.sp)
@@ -1034,47 +1042,28 @@ fun CommonApplianceFixCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // Visual Graphic Illustration Image Banner
+            // Visual Graphic Illustration Image Banner with Authentic 3D Clay Art
+            val clayResId = com.servicesync.app.ui.components.getApplianceClayDrawable(item.id)
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(96.dp)
-                    .background(androidx.compose.ui.graphics.Brush.linearGradient(gradientColors)),
+                    .height(115.dp)
+                    .background(SurfaceVariantLight),
                 contentAlignment = Alignment.Center
             ) {
-                // Background concentric glowing circles
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.12f))
+                // High-Resolution 3D Clay Appliance Image
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = clayResId),
+                    contentDescription = item.name,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.20f))
-                )
-                // Center Appliance Emblem
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.95f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = item.name,
-                        tint = gradientColors[1],
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
 
                 // Category Tag Ribbon
                 Surface(
                     shape = RoundedCornerShape(bottomStart = 8.dp),
-                    color = Color.Black.copy(alpha = 0.45f),
+                    color = Color.Black.copy(alpha = 0.55f),
                     modifier = Modifier.align(Alignment.TopEnd)
                 ) {
                     Text(
@@ -1084,6 +1073,21 @@ fun CommonApplianceFixCard(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.5.sp,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+
+                // Clay 3D Quality Badge
+                Surface(
+                    shape = RoundedCornerShape(topEnd = 8.dp),
+                    color = PrimaryBlue.copy(alpha = 0.9f),
+                    modifier = Modifier.align(Alignment.BottomStart)
+                ) {
+                    Text(
+                        text = "CLAY 3D",
+                        color = Color.White,
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp)
                     )
                 }
             }
