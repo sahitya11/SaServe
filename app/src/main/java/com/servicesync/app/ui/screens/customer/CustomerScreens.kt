@@ -581,136 +581,113 @@ fun CustomerHomeScreen(
                 }
             }
 
-            // Search Bar
+            // Clay Specialists Hero Banner (Carpenter, Plumber, Electrician, Painter, Mechanic with their tools)
             item {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search electrician, plumber, mechanic...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextMuted) },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear")
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                    border = BorderStroke(1.2.dp, CardBorder),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        // 16:9 Well-Fitted Panoramic Clay Art
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(16f / 9f)
+                                .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                                .background(SurfaceVariantLight)
+                        ) {
+                            androidx.compose.foundation.Image(
+                                painter = androidx.compose.ui.res.painterResource(id = com.servicesync.app.R.drawable.clay_specialists_team),
+                                contentDescription = "SaServe Clay Specialists - Electrician, Plumber, Carpenter, Painter, Mechanic with tools",
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+
+                            // Top Left Clay Quality Pill
+                            Surface(
+                                shape = RoundedCornerShape(bottomEnd = 12.dp, topStart = 20.dp),
+                                color = PrimaryBlue,
+                                modifier = Modifier.align(Alignment.TopStart)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(Icons.Default.Verified, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
+                                    Text(
+                                        text = "VERIFIED SPECIALISTS",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 10.sp,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+                            }
+
+                            // Bottom Glassmorphic Label Bar
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .align(Alignment.BottomCenter),
+                                color = Color.Black.copy(alpha = 0.55f)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "⚡ Electrician • Plumber • Carpenter • Painter • Mechanic",
+                                        color = Color.White,
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Equipped & Ready",
+                                        color = Color(0xFF38BDF8),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                }
                             }
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = SurfaceLight,
-                        unfocusedContainerColor = SurfaceLight,
-                        focusedBorderColor = PrimaryBlue,
-                        unfocusedBorderColor = CardBorder
-                    ),
-                    singleLine = true
-                )
-            }
 
-            // Live Search Results for Services & Appliances (Urban Company Style)
-            if (searchQuery.isNotBlank()) {
-                item {
-                    val matchedServices = remember(searchQuery) {
-                        ServiceCategory.values().flatMap { cat ->
-                            getSubServicesForCategory(cat).filter { item ->
-                                item.name.contains(searchQuery, ignoreCase = true) ||
-                                item.description.contains(searchQuery, ignoreCase = true) ||
-                                cat.displayName.contains(searchQuery, ignoreCase = true)
-                            }.map { item -> Pair(cat, item) }
-                        }
-                    }
-
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-                        border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.3f))
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        // Banner Description & Quick CTA
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Matching Services & Appliances (${matchedServices.size})",
+                                    text = "On-Demand Household Masters",
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary
                                 )
-                                TextButton(onClick = { searchQuery = "" }) {
-                                    Text("Clear", style = MaterialTheme.typography.labelSmall, color = PrimaryBlue)
-                                }
-                            }
-
-                            if (matchedServices.isEmpty()) {
                                 Text(
-                                    text = "No specific service found for \"$searchQuery\". Tap any category below to browse all available appliances.",
-                                    style = MaterialTheme.typography.bodySmall,
+                                    text = "Background-checked pros with complete professional toolkits",
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = TextSecondary
                                 )
-                            } else {
-                                matchedServices.take(6).forEach { (cat, subItem) ->
-                                    Surface(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .clickable {
-                                                searchQuery = ""
-                                                onCategorySelectedWithItem(cat, subItem.id)
-                                            },
-                                        color = SurfaceVariantLight,
-                                        shape = RoundedCornerShape(10.dp)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(10.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(40.dp)
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(SurfaceVariantLight)
-                                                    .border(1.dp, CardBorder, RoundedCornerShape(8.dp)),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                androidx.compose.foundation.Image(
-                                                    painter = androidx.compose.ui.res.painterResource(
-                                                        id = com.servicesync.app.ui.components.getApplianceClayDrawable(subItem.id)
-                                                    ),
-                                                    contentDescription = subItem.name,
-                                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                                    modifier = Modifier.fillMaxSize()
-                                                )
-                                            }
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(subItem.name, fontWeight = FontWeight.Bold, color = TextPrimary, fontSize = 13.sp)
-                                                Text(
-                                                    "${cat.displayName} • ${subItem.description}",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = TextSecondary,
-                                                    maxLines = 1
-                                                )
-                                            }
-                                            Surface(
-                                                shape = RoundedCornerShape(6.dp),
-                                                color = PrimaryBlue.copy(alpha = 0.15f)
-                                            ) {
-                                                Text(
-                                                    subItem.price,
-                                                    color = PrimaryBlue,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 12.sp,
-                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = PrimaryBlue.copy(alpha = 0.12f)
+                            ) {
+                                Text(
+                                    text = "At Your Doorstep ➔",
+                                    color = PrimaryBlue,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
                             }
                         }
                     }
