@@ -65,7 +65,7 @@ fun getApplianceClayDrawable(itemId: String): Int {
         "mech_tyre" -> R.drawable.clay_car_tyre
         "mech_scan" -> R.drawable.clay_car_scanner
         "mech_ac" -> R.drawable.clay_ac_cooler
-        "mech_inspect" -> R.drawable.clay_car_tuneup
+        "mech_inspect" -> R.drawable.clay_motorcycle
 
         // Appliance Repair appliances
         "app_fridge" -> R.drawable.clay_fridge
@@ -111,7 +111,13 @@ fun getApplianceClayDrawable(itemId: String): Int {
         "clean_floor" -> R.drawable.clay_mop_bucket
         "clean_window" -> R.drawable.clay_spray_bottle
 
-        else -> R.drawable.clay_switchboard
+        // Other & Custom unlisted services across all categories
+        "elec_other", "plumb_other", "carp_other", "mech_other",
+        "app_other", "paint_other", "mason_other", "garden_other",
+        "clean_other", "other_general", "other_fabrication", "other_glass",
+        "other_solar", "other_locksmith", "other_any" -> R.drawable.clay_other_custom
+
+        else -> R.drawable.clay_other_custom
     }
 }
 

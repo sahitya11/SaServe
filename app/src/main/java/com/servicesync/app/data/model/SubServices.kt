@@ -133,6 +133,20 @@ fun getSubServicesForCategory(category: ServiceCategory): List<SubServiceItem> {
                 isPopular = false,
                 tag = "FULL AUDIT",
                 includes = listOf("Digital multimeter load & voltage survey", "Appliance leakage detection", "Comprehensive safety certificate")
+            ),
+            SubServiceItem(
+                id = "elec_other",
+                name = "Other Electrical Work / Custom",
+                description = "Any unlisted electrical repair, custom appliance wiring or fault inspection. Diagnosis and final quotation decided on-site by specialist.",
+                price = "Unknown",
+                originalPrice = "",
+                duration = "On Inspection",
+                rating = "4.90 ★",
+                reviewCount = "450+",
+                icon = Icons.Default.Handyman,
+                isPopular = false,
+                tag = "CUSTOM JOB",
+                includes = listOf("Doorstep diagnosis by certified electrician", "Transparent quote decided on-site by provider", "Work starts only upon your consent", "SaServe Assured service guarantee")
             )
         )
         ServiceCategory.PLUMBER -> listOf(
@@ -247,6 +261,20 @@ fun getSubServicesForCategory(category: ServiceCategory): List<SubServiceItem> {
                 isPopular = false,
                 tag = "PUMP SPECIALIST",
                 includes = listOf("Suction line air lock clearing", "Motor bearing & winding resistance check", "Automatic cutoff sensor installation")
+            ),
+            SubServiceItem(
+                id = "plumb_other",
+                name = "Other Plumbing Work / Custom",
+                description = "Any unlisted plumbing repair, pipeline modification or fixture fitting. Quotation decided on-site by plumber upon inspection.",
+                price = "Unknown",
+                originalPrice = "",
+                duration = "On Inspection",
+                rating = "4.90 ★",
+                reviewCount = "380+",
+                icon = Icons.Default.Handyman,
+                isPopular = false,
+                tag = "CUSTOM JOB",
+                includes = listOf("Complete on-site pipeline & pressure survey", "Transparent quote decided on-site by provider", "Work starts only upon your consent", "SaServe Assured service guarantee")
             )
         )
         ServiceCategory.CARPENTER -> listOf(
@@ -361,6 +389,20 @@ fun getSubServicesForCategory(category: ServiceCategory): List<SubServiceItem> {
                 isPopular = false,
                 tag = "DRILL & MOUNT",
                 includes = listOf("Digital spirit level precision alignment", "Heavy duty wall plugs & anchor bolts", "Clean dust-free drilling")
+            ),
+            SubServiceItem(
+                id = "carp_other",
+                name = "Other Carpentry Work / Custom",
+                description = "Custom woodwork, bespoke furniture repair, partition or unlisted timber job. Cost decided on-site by carpenter.",
+                price = "Unknown",
+                originalPrice = "",
+                duration = "On Inspection",
+                rating = "4.90 ★",
+                reviewCount = "420+",
+                icon = Icons.Default.Handyman,
+                isPopular = false,
+                tag = "CUSTOM JOB",
+                includes = listOf("Material and craftsmanship inspection", "Transparent quote decided on-site by provider", "Work starts only upon your consent", "SaServe Assured service guarantee")
             )
         )
         ServiceCategory.MECHANIC -> listOf(
@@ -475,6 +517,20 @@ fun getSubServicesForCategory(category: ServiceCategory): List<SubServiceItem> {
                 isPopular = false,
                 tag = "PEACE OF MIND",
                 includes = listOf("50-point bumper-to-bumper inspection", "Fluid levels & leak check", "Pre-highway journey safety signoff")
+            ),
+            SubServiceItem(
+                id = "mech_other",
+                name = "Other Vehicle Work / Custom",
+                description = "Any unlisted vehicle repair, custom fabrication, wiring or breakdown inspection. Cost decided on-site by mechanic.",
+                price = "Unknown",
+                originalPrice = "",
+                duration = "On Inspection",
+                rating = "4.90 ★",
+                reviewCount = "510+",
+                icon = Icons.Default.Handyman,
+                isPopular = false,
+                tag = "CUSTOM JOB",
+                includes = listOf("Comprehensive multi-system diagnostic", "Transparent quote decided on-site by provider", "Work starts only upon your consent", "SaServe Assured service guarantee")
             )
         )
         ServiceCategory.APPLIANCE_REPAIR -> listOf(
@@ -589,6 +645,20 @@ fun getSubServicesForCategory(category: ServiceCategory): List<SubServiceItem> {
                 isPopular = false,
                 tag = "SEASONAL",
                 includes = listOf("Heating element resistance test", "Safety thermal cut-off validation", "Power cord & plug grounding check")
+            ),
+            SubServiceItem(
+                id = "app_other",
+                name = "Other Appliance Repair / Custom",
+                description = "Any unlisted household appliance repair (induction, air fryer, mixer, iron, etc.). Quotation decided on-site by specialist.",
+                price = "Unknown",
+                originalPrice = "",
+                duration = "On Inspection",
+                rating = "4.90 ★",
+                reviewCount = "640+",
+                icon = Icons.Default.Handyman,
+                isPopular = false,
+                tag = "CUSTOM JOB",
+                includes = listOf("Doorstep appliance fault inspection", "Transparent quote decided on-site by provider", "Work starts only upon your consent", "SaServe Assured service guarantee")
             )
         )
         ServiceCategory.PAINTER -> listOf(
@@ -703,6 +773,20 @@ fun getSubServicesForCategory(category: ServiceCategory): List<SubServiceItem> {
                 isPopular = false,
                 tag = "WOOD CRAFT",
                 includes = listOf("Multi-grit wood sanding preparation", "Even walnut/teak stain application", "Durable scratch-proof PU seal")
+            ),
+            SubServiceItem(
+                id = "paint_other",
+                name = "Other Painting Work / Custom",
+                description = "Any unlisted painting, artistic wall mural, special epoxy or industrial coating. Quotation decided on-site by painter.",
+                price = "Unknown",
+                originalPrice = "",
+                duration = "On Inspection",
+                rating = "4.90 ★",
+                reviewCount = "320+",
+                icon = Icons.Default.Handyman,
+                isPopular = false,
+                tag = "CUSTOM JOB",
+                includes = listOf("On-site surface & area inspection", "Transparent quote decided on-site by provider", "Work starts only upon your consent", "SaServe Assured service guarantee")
             )
         )
         ServiceCategory.MASON -> listOf(
@@ -789,6 +873,20 @@ fun getSubServicesForCategory(category: ServiceCategory): List<SubServiceItem> {
                 isPopular = false,
                 tag = "QUICK DRILL",
                 includes = listOf("Rotary hammer core drilling", "Clean debris removal & perimeter sealing", "Zero impact on surrounding plaster")
+            ),
+            SubServiceItem(
+                id = "mason_other",
+                name = "Other Masonry Work / Custom",
+                description = "Any unlisted civil, masonry, stone fitting or demolition job. Quotation decided on-site by mason.",
+                price = "Unknown",
+                originalPrice = "",
+                duration = "On Inspection",
+                rating = "4.90 ★",
+                reviewCount = "290+",
+                icon = Icons.Default.Handyman,
+                isPopular = false,
+                tag = "CUSTOM JOB",
+                includes = listOf("Civil engineering site inspection", "Transparent quote decided on-site by provider", "Work starts only upon your consent", "SaServe Assured service guarantee")
             )
         )
         ServiceCategory.GARDENER -> listOf(
@@ -875,6 +973,20 @@ fun getSubServicesForCategory(category: ServiceCategory): List<SubServiceItem> {
                 isPopular = false,
                 tag = "TRANSFORM",
                 includes = listOf("Balcony sunlight & wind analysis", "Vertical rack & hanging hook installation", "Curated air-purifying & flowering plant guide")
+            ),
+            SubServiceItem(
+                id = "garden_other",
+                name = "Other Gardening Work / Custom",
+                description = "Any unlisted garden care, tree pruning, landscape renovation or plant consultation. Quotation decided on-site by gardener.",
+                price = "Unknown",
+                originalPrice = "",
+                duration = "On Inspection",
+                rating = "4.90 ★",
+                reviewCount = "210+",
+                icon = Icons.Default.Handyman,
+                isPopular = false,
+                tag = "CUSTOM JOB",
+                includes = listOf("Horticultural garden assessment", "Transparent quote decided on-site by provider", "Work starts only upon your consent", "SaServe Assured service guarantee")
             )
         )
         ServiceCategory.HOUSE_CLEANING -> listOf(
@@ -961,6 +1073,106 @@ fun getSubServicesForCategory(category: ServiceCategory): List<SubServiceItem> {
                 isPopular = false,
                 tag = "CRYSTAL CLEAR",
                 includes = listOf("Track dust extraction with crevice tool", "Professional rubber blade squeegee", "Balcony floor water jet rinse")
+            ),
+            SubServiceItem(
+                id = "clean_other",
+                name = "Other Cleaning Work / Custom",
+                description = "Any unlisted deep cleaning, post-renovation cleanup, water tank washing or facade wash. Quotation decided on-site by cleaning specialist.",
+                price = "Unknown",
+                originalPrice = "",
+                duration = "On Inspection",
+                rating = "4.90 ★",
+                reviewCount = "380+",
+                icon = Icons.Default.Handyman,
+                isPopular = false,
+                tag = "CUSTOM JOB",
+                includes = listOf("On-site area survey and requirement audit", "Transparent quote decided on-site by provider", "Work starts only upon your consent", "SaServe Assured service guarantee")
+            )
+        )
+        ServiceCategory.OTHER -> listOf(
+            SubServiceItem(
+                id = "other_general",
+                name = "General Handyman & Odd Jobs",
+                description = "Custom home repairs, drilling, frame hanging, latch replacement, minor fixing and odds & ends.",
+                price = "Unknown",
+                originalPrice = "",
+                duration = "On Inspection",
+                rating = "4.92 ★",
+                reviewCount = "1.2k",
+                icon = Icons.Default.Handyman,
+                isPopular = true,
+                tag = "MOST POPULAR",
+                includes = listOf("Experienced multi-skilled handyman visit", "Inspection & quote decided on-site by specialist", "High quality tools & immediate start", "SaServe Assured service guarantee")
+            ),
+            SubServiceItem(
+                id = "other_fabrication",
+                name = "Metal & Welding Fabrication",
+                description = "Gate hinge welding, iron safety grill repair, shed roofing, railing reinforcement.",
+                price = "Unknown",
+                originalPrice = "",
+                duration = "On Inspection",
+                rating = "4.88 ★",
+                reviewCount = "670",
+                icon = Icons.Default.Build,
+                isPopular = false,
+                tag = "HEAVY DUTY",
+                includes = listOf("Arc welding equipment on-site", "Rust grind & metal reinforcement", "Quote decided on-site by specialist")
+            ),
+            SubServiceItem(
+                id = "other_glass",
+                name = "Glass & Aluminium Works",
+                description = "Glass partition repair, sliding aluminium door channel, mirror mounting, frosted films.",
+                price = "Unknown",
+                originalPrice = "",
+                duration = "On Inspection",
+                rating = "4.86 ★",
+                reviewCount = "520",
+                icon = Icons.Default.Window,
+                isPopular = false,
+                tag = "SPECIALIST",
+                includes = listOf("Toughened & float glass measurement", "Precision cutting & silicone bead sealing", "Quote decided on-site by specialist")
+            ),
+            SubServiceItem(
+                id = "other_solar",
+                name = "Solar Panel & Rooftop Setup",
+                description = "Solar panel cleaning, inverter cable routing, rooftop mounting structure inspection.",
+                price = "Unknown",
+                originalPrice = "",
+                duration = "On Inspection",
+                rating = "4.91 ★",
+                reviewCount = "410",
+                icon = Icons.Default.Bolt,
+                isPopular = false,
+                tag = "GREEN ENERGY",
+                includes = listOf("Solar efficiency & generation audit", "Wiring and breaker continuity check", "Quote decided on-site by specialist")
+            ),
+            SubServiceItem(
+                id = "other_locksmith",
+                name = "Locksmith & Key SOS",
+                description = "Emergency door lock opening, safe lock servicing, lost key duplicate cylinder change.",
+                price = "Unknown",
+                originalPrice = "",
+                duration = "On Inspection",
+                rating = "4.95 ★",
+                reviewCount = "1.8k",
+                icon = Icons.Default.Lock,
+                isPopular = true,
+                tag = "INSTANT SOS",
+                includes = listOf("Non-destructive lock opening techniques", "Cylinder & key set replacement", "Quote decided on-site by specialist")
+            ),
+            SubServiceItem(
+                id = "other_any",
+                name = "Any Other Custom Service",
+                description = "Need anything else not listed anywhere in the app? Tell us what you need. Our specialist will visit, inspect and quote directly.",
+                price = "Unknown",
+                originalPrice = "",
+                duration = "On Inspection",
+                rating = "4.95 ★",
+                reviewCount = "2.4k",
+                icon = Icons.Default.CheckCircle,
+                isPopular = true,
+                tag = "ANY SERVICE",
+                includes = listOf("Doorstep visit by verified technician", "Detailed discussion & on-site custom quote", "Work starts only upon your consent", "100% SaServe Assured service guarantee")
             )
         )
     }

@@ -3,6 +3,7 @@ package com.servicesync.app.ui.theme
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -13,11 +14,11 @@ import androidx.core.view.WindowCompat
 
 import com.servicesync.app.data.model.AppThemeMode
 
-private val DarkColorScheme = lightColorScheme(
+private val DarkColorScheme = darkColorScheme(
     primary = PrimaryBlue,
     onPrimary = Color.White,
     primaryContainer = Color(0xFF1E293B),
-    onPrimaryContainer = AccentSky,
+    onPrimaryContainer = Color(0xFF93C5FD),
     secondary = SecondaryTeal,
     onSecondary = Color(0xFF090D16),
     tertiary = AccentSky,

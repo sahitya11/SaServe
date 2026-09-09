@@ -15,10 +15,10 @@ val AccentGold = Color(0xFFFFD54F)        // Amber Gold
 val DarkBackground = Color(0xFF090D16)    // Deep Obsidian Black Canvas
 val DarkSurface = Color(0xFF111726)       // Deep Slate Blue Surface
 val DarkSurfaceVariant = Color(0xFF1B2236)// Elevated Slate Blue Card
-val DarkTextPrimary = Color(0xFFFFFFFF)   // Crisp White
-val DarkTextSecondary = Color(0xFF94A3B8) // Cool Silver
-val DarkTextMuted = Color(0xFF64748B)     // Muted Slate
-val DarkCardBorder = Color(0xFF222F49)    // Border for dark cards
+val DarkTextPrimary = Color(0xFFFFFFFF)   // Crisp Pure White
+val DarkTextSecondary = Color(0xFFE2E8F0) // Bright High-Contrast Cool Silver
+val DarkTextMuted = Color(0xFFA0AEC0)     // Legible Muted Slate
+val DarkCardBorder = Color(0xFF2E3A52)    // Clear Border for dark cards
 
 // Light Mode (Crisp White / Light Minimalist Palette)
 val LightBackground = Color(0xFFF8FAFC)   // Crisp Off-White
@@ -41,13 +41,24 @@ val CardBorder: Color @Composable get() = MaterialTheme.colorScheme.outlineVaria
 // Ratings & Status Colors (Optimized for both dark & light backgrounds)
 val StarGold = Color(0xFFFFB300)
 val StatusPending = Color(0xFFF59E0B)
-val StatusPendingBg = Color(0xFFFEF3C7)
 val StatusAccepted = Color(0xFF0284C7)
-val StatusAcceptedBg = Color(0xFFE0F2FE)
 val StatusInProgress = Color(0xFF8B5CF6)
-val StatusInProgressBg = Color(0xFFEDE9FE)
 val StatusCompleted = Color(0xFF10B981)
-val StatusCompletedBg = Color(0xFFD1FAE5)
 val StatusCancelled = Color(0xFFEF4444)
-val StatusCancelledBg = Color(0xFFFEE2E2)
+
+// Adaptive Status Backgrounds: deep luminous tints in Dark Mode, soft pastels in Light Mode
+val StatusPendingBg: Color @Composable get() =
+    if (MaterialTheme.colorScheme.background == DarkBackground) Color(0xFF382305) else Color(0xFFFEF3C7)
+
+val StatusAcceptedBg: Color @Composable get() =
+    if (MaterialTheme.colorScheme.background == DarkBackground) Color(0xFF0C2740) else Color(0xFFE0F2FE)
+
+val StatusInProgressBg: Color @Composable get() =
+    if (MaterialTheme.colorScheme.background == DarkBackground) Color(0xFF241544) else Color(0xFFEDE9FE)
+
+val StatusCompletedBg: Color @Composable get() =
+    if (MaterialTheme.colorScheme.background == DarkBackground) Color(0xFF09331E) else Color(0xFFD1FAE5)
+
+val StatusCancelledBg: Color @Composable get() =
+    if (MaterialTheme.colorScheme.background == DarkBackground) Color(0xFF3F1114) else Color(0xFFFEE2E2)
 

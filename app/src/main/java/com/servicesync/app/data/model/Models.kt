@@ -60,6 +60,11 @@ enum class ServiceCategory(
         displayName = "House Cleaning",
         description = "Deep home cleaning, bathroom & kitchen scrubbing, sofa & floor sanitization",
         iconName = "CleaningServices"
+    ),
+    OTHER(
+        displayName = "Other Services",
+        description = "Custom repairs, fabrication, general maintenance & unlisted services",
+        iconName = "Handyman"
     )
 }
 

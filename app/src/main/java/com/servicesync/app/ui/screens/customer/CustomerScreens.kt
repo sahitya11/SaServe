@@ -773,6 +773,75 @@ fun CustomerHomeScreen(
                             onClick = { onCategorySelected(ServiceCategory.HOUSE_CLEANING) }
                         )
                     }
+
+                    // Dedicated Banner Card for "Other Services & Custom Request"
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable { onCategorySelected(ServiceCategory.OTHER) },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                        border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.25f)),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(PrimaryBlue.copy(alpha = 0.12f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Handyman,
+                                    contentDescription = "Other Services",
+                                    tint = PrimaryBlue,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text(
+                                        text = "Other Services & Custom Request",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimary
+                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = Color(0xFFF59E0B).copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            text = "UNKNOWN RATE",
+                                            color = Color(0xFFD97706),
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "Need an unlisted service? Specialist inspects and gives an on-site custom quote.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextSecondary,
+                                    maxLines = 1
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.ArrowForward,
+                                contentDescription = null,
+                                tint = TextSecondary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
                 }
             }
 
@@ -948,6 +1017,7 @@ fun CommonApplianceFixCard(
             ServiceCategory.MASON -> listOf(Color(0xFF7C2D12), Color(0xFFC2410C), Color(0xFFFB923C))
             ServiceCategory.GARDENER -> listOf(Color(0xFF14532D), Color(0xFF16A34A), Color(0xFF4ADE80))
             ServiceCategory.HOUSE_CLEANING -> listOf(Color(0xFF0F766E), Color(0xFF0D9488), Color(0xFF2DD4BF))
+            ServiceCategory.OTHER -> listOf(Color(0xFF334155), Color(0xFF475569), Color(0xFF64748B))
         }
     }
 

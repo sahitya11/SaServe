@@ -107,6 +107,7 @@ fun getCategoryIcon(category: ServiceCategory?): ImageVector {
         ServiceCategory.MASON -> Icons.Default.Foundation
         ServiceCategory.GARDENER -> Icons.Default.Yard
         ServiceCategory.HOUSE_CLEANING -> Icons.Default.CleaningServices
+        ServiceCategory.OTHER -> Icons.Default.Handyman
         null -> Icons.Default.Handyman
     }
 }

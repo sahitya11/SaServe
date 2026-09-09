@@ -700,6 +700,7 @@ class ServiceSyncRepository(private val context: Context) {
                     ServiceCategory.MASON -> "Harish Rawat"
                     ServiceCategory.GARDENER -> "Manoj Saini"
                     ServiceCategory.HOUSE_CLEANING -> "Pooja Sharma"
+                    ServiceCategory.OTHER -> "Sunil Sharma"
                 }
                 addServiceProvider(
                     name = mockName,

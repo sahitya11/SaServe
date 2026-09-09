@@ -398,7 +398,10 @@ fun ServiceCatalogScreen(
                                         fontSize = 14.sp
                                     )
                                     Text(
-                                        text = "${selectedCategory.displayName} • ${currentItem.price}",
+                                        text = if (currentItem.price.equals("Unknown", ignoreCase = true))
+                                            "${selectedCategory.displayName} • On-Site Custom Quote"
+                                        else
+                                            "${selectedCategory.displayName} • ${currentItem.price}",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = PrimaryBlue,
                                         fontWeight = FontWeight.Bold
@@ -406,11 +409,11 @@ fun ServiceCatalogScreen(
                                 }
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
-                                    color = PrimaryBlue.copy(alpha = 0.15f)
+                                    color = if (currentItem.price.equals("Unknown", ignoreCase = true)) Color(0xFFF59E0B).copy(alpha = 0.15f) else PrimaryBlue.copy(alpha = 0.15f)
                                 ) {
                                     Text(
-                                        text = currentItem.price,
-                                        color = PrimaryBlue,
+                                        text = if (currentItem.price.equals("Unknown", ignoreCase = true)) "Unknown" else currentItem.price,
+                                        color = if (currentItem.price.equals("Unknown", ignoreCase = true)) Color(0xFFD97706) else PrimaryBlue,
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 13.sp,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -744,29 +747,65 @@ fun ApplianceCatalogCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = item.price,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = TextPrimary
-                    )
-                    Text(
-                        text = item.originalPrice,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextMuted,
-                        textDecoration = TextDecoration.LineThrough
-                    )
-                    Surface(
-                        shape = RoundedCornerShape(4.dp),
-                        color = StatusAccepted.copy(alpha = 0.15f)
-                    ) {
+                    if (item.price.equals("Unknown", ignoreCase = true)) {
+                        Column {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "Unknown",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = TextPrimary
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = Color(0xFFF59E0B).copy(alpha = 0.15f)
+                                ) {
+                                    Text(
+                                        text = "ON-SITE QUOTE",
+                                        color = Color(0xFFD97706),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 10.sp,
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "Decided by specialist on visit",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+                    } else {
                         Text(
-                            text = "SAVE 33%",
-                            color = StatusAccepted,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 10.sp,
-                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                            text = item.price,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = TextPrimary
                         )
+                        if (item.originalPrice.isNotBlank()) {
+                            Text(
+                                text = item.originalPrice,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextMuted,
+                                textDecoration = TextDecoration.LineThrough
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = StatusAccepted.copy(alpha = 0.15f)
+                            ) {
+                                Text(
+                                    text = "SAVE 33%",
+                                    color = StatusAccepted,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
                     }
                 }
 
