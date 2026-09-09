@@ -634,7 +634,7 @@ fun CustomerHomeScreen(
                                     Icon(Icons.Default.Shield, null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                                     Text("Two-OTP Security", color = PrimaryBlue, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                 }
-                                Text("Urban Safety Protocol", color = TextPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                                Text("SaServe Safety Protocol", color = TextPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                                 Text("Start & Completion OTPs ensure verified specialist and payment safety.", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
                             }
                         }
@@ -752,10 +752,31 @@ fun CustomerHomeScreen(
                             onClick = { onCategorySelected(ServiceCategory.PAINTER) }
                         )
                     }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        CategoryGridItem(
+                            category = ServiceCategory.MASON,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onCategorySelected(ServiceCategory.MASON) }
+                        )
+                        CategoryGridItem(
+                            category = ServiceCategory.GARDENER,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onCategorySelected(ServiceCategory.GARDENER) }
+                        )
+                        CategoryGridItem(
+                            category = ServiceCategory.HOUSE_CLEANING,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onCategorySelected(ServiceCategory.HOUSE_CLEANING) }
+                        )
+                    }
                 }
             }
 
-            // Most Requested Appliances & Quick Fixes (Urban Company Style)
+            // Most Requested Appliances & Quick Fixes (SaServe Assured)
             item {
                 val commonFixes = remember {
                     listOf(
@@ -763,10 +784,14 @@ fun CustomerHomeScreen(
                         Pair(ServiceCategory.PLUMBER, getSubServicesForCategory(ServiceCategory.PLUMBER).first { it.id == "plumb_tap" }),
                         Pair(ServiceCategory.APPLIANCE_REPAIR, getSubServicesForCategory(ServiceCategory.APPLIANCE_REPAIR).first { it.id == "app_wm" }),
                         Pair(ServiceCategory.CARPENTER, getSubServicesForCategory(ServiceCategory.CARPENTER).first { it.id == "carp_locks" }),
+                        Pair(ServiceCategory.HOUSE_CLEANING, getSubServicesForCategory(ServiceCategory.HOUSE_CLEANING).first { it.id == "clean_deep_home" }),
                         Pair(ServiceCategory.APPLIANCE_REPAIR, getSubServicesForCategory(ServiceCategory.APPLIANCE_REPAIR).first { it.id == "app_fridge" }),
                         Pair(ServiceCategory.ELECTRICIAN, getSubServicesForCategory(ServiceCategory.ELECTRICIAN).first { it.id == "elec_switch" }),
+                        Pair(ServiceCategory.GARDENER, getSubServicesForCategory(ServiceCategory.GARDENER).first { it.id == "garden_lawn" }),
+                        Pair(ServiceCategory.MASON, getSubServicesForCategory(ServiceCategory.MASON).first { it.id == "mason_tile" }),
                         Pair(ServiceCategory.MECHANIC, getSubServicesForCategory(ServiceCategory.MECHANIC).first { it.id == "mech_bike" }),
-                        Pair(ServiceCategory.PAINTER, getSubServicesForCategory(ServiceCategory.PAINTER).first { it.id == "paint_patch" })
+                        Pair(ServiceCategory.PAINTER, getSubServicesForCategory(ServiceCategory.PAINTER).first { it.id == "paint_patch" }),
+                        Pair(ServiceCategory.HOUSE_CLEANING, getSubServicesForCategory(ServiceCategory.HOUSE_CLEANING).first { it.id == "clean_kitchen" })
                     )
                 }
 
@@ -920,6 +945,9 @@ fun CommonApplianceFixCard(
             ServiceCategory.MECHANIC -> listOf(Color(0xFF881337), Color(0xFFE11D48), Color(0xFFFB7185))
             ServiceCategory.APPLIANCE_REPAIR -> listOf(Color(0xFF064E3B), Color(0xFF059669), Color(0xFF34D399))
             ServiceCategory.PAINTER -> listOf(Color(0xFF581C87), Color(0xFF9333EA), Color(0xFFC084FC))
+            ServiceCategory.MASON -> listOf(Color(0xFF7C2D12), Color(0xFFC2410C), Color(0xFFFB923C))
+            ServiceCategory.GARDENER -> listOf(Color(0xFF14532D), Color(0xFF16A34A), Color(0xFF4ADE80))
+            ServiceCategory.HOUSE_CLEANING -> listOf(Color(0xFF0F766E), Color(0xFF0D9488), Color(0xFF2DD4BF))
         }
     }
 
@@ -964,21 +992,6 @@ fun CommonApplianceFixCard(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.5.sp,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
-
-                // Clay 3D Quality Badge
-                Surface(
-                    shape = RoundedCornerShape(topEnd = 8.dp),
-                    color = PrimaryBlue.copy(alpha = 0.9f),
-                    modifier = Modifier.align(Alignment.BottomStart)
-                ) {
-                    Text(
-                        text = "CLAY 3D",
-                        color = Color.White,
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp)
                     )
                 }
             }
@@ -2084,7 +2097,7 @@ fun BookingItemCard(
                 }
             }
 
-            // UrbanClap Two-OTP Badge preview (Locked when PENDING)
+            // SaServe Two-OTP Badge preview (Locked when PENDING)
             if (booking.status == BookingStatus.PENDING) {
                 Surface(
                     shape = RoundedCornerShape(10.dp),

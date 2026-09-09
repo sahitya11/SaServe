@@ -45,6 +45,21 @@ enum class ServiceCategory(
         displayName = "Painter",
         description = "Interior/exterior painting, waterproofing & wall touch-ups",
         iconName = "FormatPaint"
+    ),
+    MASON(
+        displayName = "Mason",
+        description = "Brickwork, concrete casting, plastering, wall tiling & flooring",
+        iconName = "Foundation"
+    ),
+    GARDENER(
+        displayName = "Gardener",
+        description = "Lawn mowing, hedge trimming, plant potting, landscaping & soil treatment",
+        iconName = "Yard"
+    ),
+    HOUSE_CLEANING(
+        displayName = "House Cleaning",
+        description = "Deep home cleaning, bathroom & kitchen scrubbing, sofa & floor sanitization",
+        iconName = "CleaningServices"
     )
 }
 

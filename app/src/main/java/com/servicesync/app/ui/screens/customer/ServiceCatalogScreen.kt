@@ -83,7 +83,7 @@ fun ServiceCatalogScreen(
                             color = TextPrimary
                         )
                         Text(
-                            text = "SaServe Urban Warranty • Verified Experts",
+                            text = "SaServe Assured Warranty • Verified Experts",
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary
                         )
@@ -157,7 +157,7 @@ fun ServiceCatalogScreen(
                 }
             }
 
-            // Urban Company Style Hero Category Banner
+            // SaServe Assured Hero Category Banner
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -189,7 +189,7 @@ fun ServiceCatalogScreen(
                                     color = PrimaryBlue
                                 ) {
                                     Text(
-                                        text = "URBAN COMPANY STANDARDS",
+                                        text = "SASERVE ASSURED STANDARDS",
                                         color = Color.White,
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 10.sp,
@@ -632,7 +632,7 @@ fun ServiceCatalogScreen(
 }
 
 /**
- * Urban Company Style Appliance Card with Visual Image Box, Ratings, Inclusions, and Price.
+ * SaServe Assured Appliance Card with Visual Image Box, Ratings, Inclusions, and Price.
  */
 @Composable
 fun ApplianceCatalogCard(
@@ -824,21 +824,6 @@ fun ApplianceVisualBadge(
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                 )
             }
-        }
-
-        // Bottom Verified Pro Micro-label with soft frosted glass backing
-        Surface(
-            shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
-            color = Color.Black.copy(alpha = 0.65f),
-            modifier = Modifier.align(Alignment.BottomCenter)
-        ) {
-            Text(
-                text = "CLAY 3D • VERIFIED",
-                color = Color.White.copy(alpha = 0.95f),
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.5.dp)
-            )
         }
     }
 }

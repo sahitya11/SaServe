@@ -697,6 +697,9 @@ class ServiceSyncRepository(private val context: Context) {
                     ServiceCategory.MECHANIC -> "Vikram Singh"
                     ServiceCategory.APPLIANCE_REPAIR -> "Amit Saini"
                     ServiceCategory.PAINTER -> "Rajesh Patel"
+                    ServiceCategory.MASON -> "Harish Rawat"
+                    ServiceCategory.GARDENER -> "Manoj Saini"
+                    ServiceCategory.HOUSE_CLEANING -> "Pooja Sharma"
                 }
                 addServiceProvider(
                     name = mockName,
@@ -1331,7 +1334,7 @@ class ServiceSyncRepository(private val context: Context) {
                 reviewCount = 115,
                 experienceYears = 6,
                 hourlyRate = 249.0,
-                bio = "Furniture assembly (IKEA, Urban Ladder), hydraulic bed lift support & sliding window track repair.",
+                bio = "Furniture assembly (IKEA, Custom Furniture), hydraulic bed lift support & sliding window track repair.",
                 location = "Subhash Nagar (2.4 km away)",
                 distanceMiles = 1.5,
                 isAvailable = true,
@@ -1556,12 +1559,338 @@ class ServiceSyncRepository(private val context: Context) {
                 reviews = listOf(
                     Review("rev_19", "Bhavna Joshi", 5.0f, "Sprayed enamel on balcony metal railings, looks brand new.", "1 week ago")
                 )
+            ),
+            ServiceProvider(
+                id = "prov_paint_4",
+                userId = "user_paint_4",
+                name = "Preeti Kashyap",
+                phone = "+91 98199 43210",
+                email = "preeti.kashyap@saserve.com",
+                category = ServiceCategory.PAINTER,
+                rating = 4.95f,
+                reviewCount = 178,
+                experienceYears = 8,
+                hourlyRate = 499.0,
+                bio = "Color consultant & decorative wall designer. Metallic stucco, velvet accents, wallpaper & eco-friendly low-VOC paints.",
+                location = "Greater Kailash (1.8 km away)",
+                distanceMiles = 1.1,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Color Consultation", "Velvet Textures", "Low-VOC Paints"),
+                reviews = listOf(
+                    Review("rev_20", "Megha Kapoor", 5.0f, "Helped us pick the perfect accent shade for master bedroom. Flawless finish.", "4 days ago")
+                )
+            ),
+
+            // Additional Female Specialists for Trades
+            ServiceProvider(
+                id = "prov_elec_4",
+                userId = "user_elec_4",
+                name = "Priya Sundaram",
+                phone = "+91 98210 56781",
+                email = "priya.sundaram@saserve.com",
+                category = ServiceCategory.ELECTRICIAN,
+                rating = 4.93f,
+                reviewCount = 162,
+                experienceYears = 7,
+                hourlyRate = 279.0,
+                bio = "Certified Electrical Wirewoman & Smart Home Technician. Smart automation switches, LED architectural lighting & safe circuit diagnostics.",
+                location = "Hauz Khas (1.5 km away)",
+                distanceMiles = 0.9,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Smart Switches", "Architectural Lighting", "Circuit Diagnostics"),
+                reviews = listOf(
+                    Review("rev_21", "Tanvi Sharma", 5.0f, "Priya configured our smart home touch switches seamlessly. Very efficient!", "2 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_plumb_4",
+                userId = "user_plumb_4",
+                name = "Anita Maurya",
+                phone = "+91 98321 67892",
+                email = "anita.maurya@saserve.com",
+                category = ServiceCategory.PLUMBER,
+                rating = 4.88f,
+                reviewCount = 110,
+                experienceYears = 6,
+                hourlyRate = 249.0,
+                bio = "Sanitary & CPVC pipe specialist. Kitchen sink installation, mixer taps, drain clearing & pressure pump fittings.",
+                location = "Vasant Kunj (2.0 km away)",
+                distanceMiles = 1.3,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Kitchen Sinks", "Mixer Taps", "Pressure Pumps"),
+                reviews = listOf(
+                    Review("rev_22", "Rahul Saxena", 4.9f, "Solved our persistent bathroom leakage issue quickly and cleanly.", "3 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_carp_4",
+                userId = "user_carp_4",
+                name = "Shalini Rathore",
+                phone = "+91 98432 78903",
+                email = "shalini.rathore@saserve.com",
+                category = ServiceCategory.CARPENTER,
+                rating = 4.91f,
+                reviewCount = 145,
+                experienceYears = 8,
+                hourlyRate = 299.0,
+                bio = "Modular woodcraft, custom modular wardrobes, drawer soft-close sliders & artistic wooden partition panels.",
+                location = "Defence Colony (1.6 km away)",
+                distanceMiles = 1.0,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Modular Wardrobes", "Soft-Close Sliders", "Wood Partitions"),
+                reviews = listOf(
+                    Review("rev_23", "Simran Gill", 5.0f, "Realigned our entire wardrobe sliding track with precision. Highly recommend!", "1 week ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_mech_4",
+                userId = "user_mech_4",
+                name = "Neha Kulkarni",
+                phone = "+91 98543 89014",
+                email = "neha.kulkarni@saserve.com",
+                category = ServiceCategory.MECHANIC,
+                rating = 4.90f,
+                reviewCount = 134,
+                experienceYears = 7,
+                hourlyRate = 349.0,
+                bio = "Automobile diagnostics engineer. OBD scanning, hybrid/EV electrical systems, battery health checks & brake servicing.",
+                location = "Saket (2.8 km away)",
+                distanceMiles = 1.7,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("OBD Diagnostics", "Battery Testing", "Brake Overhaul"),
+                reviews = listOf(
+                    Review("rev_24", "Arjun Bhatia", 5.0f, "Diagnosed engine check light within 10 minutes. Extremely knowledgeable.", "4 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_app_4",
+                userId = "user_app_4",
+                name = "Sunita Rao",
+                phone = "+91 98654 90125",
+                email = "sunita.rao@saserve.com",
+                category = ServiceCategory.APPLIANCE_REPAIR,
+                rating = 4.94f,
+                reviewCount = 195,
+                experienceYears = 9,
+                hourlyRate = 399.0,
+                bio = "Certified HVAC & washing machine specialist. Inverter PCB board repairs, front-load drum bearing fixes & gas charging.",
+                location = "Pitampura (3.0 km away)",
+                distanceMiles = 1.9,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Inverter PCB Repair", "Washing Machine Drums", "AC Gas Refill"),
+                reviews = listOf(
+                    Review("rev_25", "Swati Nanda", 5.0f, "Fixed my Samsung front-load error code quickly. Transparent and honest pricing.", "2 days ago")
+                )
+            ),
+
+            // MASON SPECIALISTS (Male & Female)
+            ServiceProvider(
+                id = "prov_mason_1",
+                userId = "user_mason_1",
+                name = "Harish Rawat",
+                phone = "+91 98101 23456",
+                email = "harish.rawat@saserve.com",
+                category = ServiceCategory.MASON,
+                rating = 4.92f,
+                reviewCount = 210,
+                experienceYears = 14,
+                hourlyRate = 449.0,
+                bio = "Senior Master Mason. Specialized in boundary walls, RCC beam casting, plaster repair & heavy stone masonry.",
+                location = "Karol Bagh (1.8 km away)",
+                distanceMiles = 1.1,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Brickwork", "RCC Concrete", "Wall Plastering", "Boundary Walls"),
+                reviews = listOf(
+                    Review("rev_m1", "Satish Goel", 5.0f, "Built our courtyard boundary wall with laser-straight alignment.", "3 days ago"),
+                    Review("rev_m2", "Kamal Nain", 4.8f, "Excellent plaster finish, seamless crack repairs.", "1 week ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_mason_2",
+                userId = "user_mason_2",
+                name = "Geeta Yadav",
+                phone = "+91 98202 34567",
+                email = "geeta.yadav@saserve.com",
+                category = ServiceCategory.MASON,
+                rating = 4.89f,
+                reviewCount = 135,
+                experienceYears = 8,
+                hourlyRate = 399.0,
+                bio = "Tile & flooring specialist. Vitrified floor tiles, waterproof epoxy grouting, bathroom wall tiles & countertop granite fixing.",
+                location = "Palam (2.5 km away)",
+                distanceMiles = 1.6,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Tile Laying", "Epoxy Grout", "Granite Counters", "Surface Leveling"),
+                reviews = listOf(
+                    Review("rev_m3", "Rekha Sen", 5.0f, "Replaced broken bathroom tiles perfectly without damaging adjacent ones.", "2 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_mason_3",
+                userId = "user_mason_3",
+                name = "Dinesh Prajapati",
+                phone = "+91 98303 45678",
+                email = "dinesh.prajapati@saserve.com",
+                category = ServiceCategory.MASON,
+                rating = 4.84f,
+                reviewCount = 88,
+                experienceYears = 10,
+                hourlyRate = 349.0,
+                bio = "Core hole drilling, concrete chipping, AC duct coring & damp wall brick repair.",
+                location = "Janakpuri (3.4 km away)",
+                distanceMiles = 2.1,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Core Drilling", "Concrete Chipping", "Damp Proofing"),
+                reviews = listOf(
+                    Review("rev_m4", "Vivek Anand", 4.8f, "Drilled 4-inch core hole for kitchen chimney exhaust very cleanly.", "5 days ago")
+                )
+            ),
+
+            // GARDENER SPECIALISTS (Male & Female)
+            ServiceProvider(
+                id = "prov_gard_1",
+                userId = "user_gard_1",
+                name = "Manoj Saini",
+                phone = "+91 98404 56789",
+                email = "manoj.saini@saserve.com",
+                category = ServiceCategory.GARDENER,
+                rating = 4.94f,
+                reviewCount = 260,
+                experienceYears = 11,
+                hourlyRate = 299.0,
+                bio = "Senior Horticulturalist & Lawn Expert. Rotary lawn mowing, turf leveling, weed eradication & seasonal flowering care.",
+                location = "Vasant Vihar (1.4 km away)",
+                distanceMiles = 0.9,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Lawn Mowing", "Turf Care", "Organic Fertilizers", "Grass Dethatching"),
+                reviews = listOf(
+                    Review("rev_g1", "Nalini Krishnan", 5.0f, "Transformed our yellow lawn into lush green carpet within two visits!", "2 days ago"),
+                    Review("rev_g2", "Pradeep Chawla", 4.9f, "Prompt, polite and brought all professional mowing gear.", "1 week ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_gard_2",
+                userId = "user_gard_2",
+                name = "Kavita Nair",
+                phone = "+91 98505 67890",
+                email = "kavita.nair@saserve.com",
+                category = ServiceCategory.GARDENER,
+                rating = 4.91f,
+                reviewCount = 175,
+                experienceYears = 7,
+                hourlyRate = 349.0,
+                bio = "Balcony & terrace garden designer. Micro-drip irrigation installation, vertical planters, organic pest treatment & exotic plants potting.",
+                location = "New Friends Colony (2.1 km away)",
+                distanceMiles = 1.3,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Balcony Gardens", "Drip Irrigation", "Plant Potting", "Neem Pest Spray"),
+                reviews = listOf(
+                    Review("rev_g3", "Anjali Deshmukh", 5.0f, "Set up a gorgeous vertical balcony herbal garden. Great guidance on plant care.", "3 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_gard_3",
+                userId = "user_gard_3",
+                name = "Raju Paswan",
+                phone = "+91 98606 78901",
+                email = "raju.paswan@saserve.com",
+                category = ServiceCategory.GARDENER,
+                rating = 4.82f,
+                reviewCount = 94,
+                experienceYears = 9,
+                hourlyRate = 249.0,
+                bio = "Hedge shearing, tree branch thinning, soil vermicompost conditioning & garden cleanup.",
+                location = "Sarita Vihar (3.6 km away)",
+                distanceMiles = 2.2,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Hedge Trimming", "Pruning", "Soil Vermicompost"),
+                reviews = listOf(
+                    Review("rev_g4", "Girish Sethi", 4.8f, "Pruned large bougainvillea and trimmed all hedges neatly.", "6 days ago")
+                )
+            ),
+
+            // HOUSE CLEANING SPECIALISTS (Male & Female)
+            ServiceProvider(
+                id = "prov_clean_1",
+                userId = "user_clean_1",
+                name = "Pooja Sharma",
+                phone = "+91 98707 89012",
+                email = "pooja.sharma@saserve.com",
+                category = ServiceCategory.HOUSE_CLEANING,
+                rating = 4.96f,
+                reviewCount = 310,
+                experienceYears = 8,
+                hourlyRate = 499.0,
+                bio = "Certified Home Deep Cleaning Lead. Complete 2BHK/3BHK sanitization, industrial HEPA vacuuming & anti-allergen bedroom treatment.",
+                location = "Golf Course Road (1.2 km away)",
+                distanceMiles = 0.7,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Deep Home Cleaning", "HEPA Vacuuming", "Bathroom Sanitization", "Eco Chemicals"),
+                reviews = listOf(
+                    Review("rev_c1", "Rohit Aggarwal", 5.0f, "The house looks brand new! Every corner and ceiling was spotless.", "1 day ago"),
+                    Review("rev_c2", "Sangeeta Rao", 5.0f, "Very courteous team and top-grade hospital-safe sanitizers used.", "4 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_clean_2",
+                userId = "user_clean_2",
+                name = "Deepak Malviya",
+                phone = "+91 98808 90123",
+                email = "deepak.malviya@saserve.com",
+                category = ServiceCategory.HOUSE_CLEANING,
+                rating = 4.88f,
+                reviewCount = 180,
+                experienceYears = 6,
+                hourlyRate = 399.0,
+                bio = "Single-disc machine floor buffing, marble polishing, sofa injection-extraction shampooing & stain removal.",
+                location = "Sushant Lok (2.3 km away)",
+                distanceMiles = 1.4,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Machine Floor Buffing", "Sofa Shampooing", "Carpet Cleaning"),
+                reviews = listOf(
+                    Review("rev_c3", "Manish Mathur", 4.9f, "Removed year-old coffee stains from our 7-seater sofa. Smells fresh!", "3 days ago")
+                )
+            ),
+            ServiceProvider(
+                id = "prov_clean_3",
+                userId = "user_clean_3",
+                name = "Meena Kumari",
+                phone = "+91 98909 01234",
+                email = "meena.kumari@saserve.com",
+                category = ServiceCategory.HOUSE_CLEANING,
+                rating = 4.93f,
+                reviewCount = 225,
+                experienceYears = 9,
+                hourlyRate = 349.0,
+                bio = "Kitchen degreasing & bathroom tile descaling expert. Chimney mesh oil bath, hard-water lime removal & glass sparkle wash.",
+                location = "Cyber City (2.7 km away)",
+                distanceMiles = 1.7,
+                isAvailable = true,
+                isVerified = true,
+                skills = listOf("Kitchen Degreasing", "Limescale Descaling", "Glass Windows"),
+                reviews = listOf(
+                    Review("rev_c4", "Alka Verma", 5.0f, "Removed tough hard-water deposits from shower glass doors. Highly satisfied!", "5 days ago")
+                )
             )
         )
     }
 
     companion object {
-        private const val KEY_CUSTOM_PROVIDERS = "key_custom_providers_indian_v3"
+        private const val KEY_CUSTOM_PROVIDERS = "key_custom_providers_indian_v4"
         private const val KEY_CUSTOM_BOOKINGS = "key_custom_bookings_v4"
         private const val KEY_NOTIFICATIONS = "key_notifications_list"
         private const val KEY_CURRENT_USER = "key_current_user"

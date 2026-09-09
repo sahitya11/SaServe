@@ -103,7 +103,7 @@ fun BookingStatusScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 1. UrbanClap Style Hero Status Card
+            // 1. SaServe Hero Status Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -187,7 +187,7 @@ fun BookingStatusScreen(
                         color = TextPrimary
                     )
 
-                    // UrbanClap Live Acceptance Trigger for Testing
+                    // SaServe Live Acceptance Trigger for Testing
                     if (booking.status == BookingStatus.PENDING) {
                         Button(
                             onClick = { repository.acceptBooking(booking.id) },
@@ -203,7 +203,7 @@ fun BookingStatusScreen(
                 }
             }
 
-            // 2. URBANCLAP TWO-OTP SECURITY SECTION
+            // 2. SASERVE TWO-OTP SECURITY SECTION
             if (booking.status == BookingStatus.PENDING) {
                 // OTPs locked until specialist accepts
                 Card(
