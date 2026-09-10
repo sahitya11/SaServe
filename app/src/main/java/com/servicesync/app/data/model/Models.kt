@@ -203,3 +203,15 @@ data class WalletTransaction(
     val upiRefId: String = ""
 )
 
+data class AppFeedback(
+    val id: String = "",
+    val userId: String = "",
+    val userName: String = "",
+    val userPhone: String = "",
+    val issueCategory: String = "",
+    val rating: Int = 5,
+    val suggestions: String = "",
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+

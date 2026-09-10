@@ -50,6 +50,9 @@ class ServiceSyncRepository(private val context: Context) {
     private val _pendingCancellationFee = MutableStateFlow<Double>(0.0)
     val pendingCancellationFee: StateFlow<Double> = _pendingCancellationFee.asStateFlow()
 
+    private val _feedbackList = MutableStateFlow<List<AppFeedback>>(emptyList())
+    val feedbackList: StateFlow<List<AppFeedback>> = _feedbackList.asStateFlow()
+
     init {
         loadOrInitializeData()
     }
@@ -212,6 +215,55 @@ class ServiceSyncRepository(private val context: Context) {
         // 8. Pending Cancellation Fee
         val savedPendingFee = prefs.getFloat(KEY_PENDING_CANCELLATION_FEE, 0.0f).toDouble()
         _pendingCancellationFee.value = savedPendingFee
+
+        // 9. Feedback Submissions
+        val savedFeedbackJson = prefs.getString(KEY_FEEDBACK_LIST, null)
+        if (!savedFeedbackJson.isNullOrEmpty()) {
+            val type = object : TypeToken<List<AppFeedback>>() {}.type
+            try {
+                val loaded: List<AppFeedback>? = gson.fromJson(savedFeedbackJson, type)
+                if (loaded != null) {
+                    _feedbackList.value = loaded
+                }
+            } catch (e: Exception) {
+                // Ignore parsing errors
+            }
+        }
+    }
+
+    fun submitFeedback(
+        issueCategory: String,
+        rating: Int,
+        suggestions: String,
+        contactName: String? = null,
+        contactPhone: String? = null
+    ): AppFeedback {
+        val user = _currentUser.value
+        val feedback = AppFeedback(
+            id = "fb_" + UUID.randomUUID().toString().take(8),
+            userId = user?.id ?: "guest_user",
+            userName = contactName?.ifBlank { user?.name } ?: (user?.name ?: "Valued Customer"),
+            userPhone = contactPhone?.ifBlank { user?.phone } ?: (user?.phone ?: "+91 Registered User"),
+            issueCategory = issueCategory,
+            rating = rating,
+            suggestions = suggestions.trim(),
+            timestamp = System.currentTimeMillis()
+        )
+        val updated = listOf(feedback) + _feedbackList.value
+        _feedbackList.value = updated
+        prefs.edit().putString(KEY_FEEDBACK_LIST, gson.toJson(updated)).apply()
+
+        // Confirmation notification in-app
+        val notif = AppNotification(
+            id = UUID.randomUUID().toString(),
+            title = "Feedback Received 💬",
+            message = "Thank you! Your suggestions regarding '$issueCategory' have been submitted. Our team reviews all suggestions to enhance SaServe."
+        )
+        val updatedNotifs = listOf(notif) + _notifications.value
+        _notifications.value = updatedNotifs
+        saveNotifications(updatedNotifs)
+
+        return feedback
     }
 
     fun savePendingCancellationFee(fee: Double) {
@@ -1902,6 +1954,7 @@ class ServiceSyncRepository(private val context: Context) {
         private const val KEY_WALLET_TRANSACTIONS = "key_wallet_transactions_v1"
         private const val KEY_THEME_MODE = "key_theme_mode_v1"
         private const val KEY_PENDING_CANCELLATION_FEE = "key_pending_cancellation_fee_v1"
+        private const val KEY_FEEDBACK_LIST = "key_feedback_list_v1"
 
         @Volatile
         private var INSTANCE: ServiceSyncRepository? = null

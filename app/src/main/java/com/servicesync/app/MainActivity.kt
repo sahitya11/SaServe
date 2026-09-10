@@ -70,6 +70,7 @@ sealed class Screen {
     data class BookingStatus(val booking: Booking) : Screen()
     object Wallet : Screen()
     object HelpSupport : Screen()
+    object Feedback : Screen()
     object ManageAddresses : Screen()
 }
 
@@ -201,6 +202,9 @@ fun MainAppHost(initialNavTarget: String?, repository: ServiceSyncRepository) {
                         onOpenHelp = {
                             currentScreen = Screen.HelpSupport
                         },
+                        onOpenFeedback = {
+                            currentScreen = Screen.Feedback
+                        },
                         onOpenAddresses = {
                             currentScreen = Screen.ManageAddresses
                         },
@@ -300,6 +304,13 @@ fun MainAppHost(initialNavTarget: String?, repository: ServiceSyncRepository) {
 
                 is Screen.HelpSupport -> {
                     HelpSupportScreen(
+                        onBackClick = { currentScreen = Screen.CustomerHome }
+                    )
+                }
+
+                is Screen.Feedback -> {
+                    FeedbackScreen(
+                        repository = repository,
                         onBackClick = { currentScreen = Screen.CustomerHome }
                     )
                 }

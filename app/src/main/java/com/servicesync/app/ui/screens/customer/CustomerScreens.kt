@@ -44,6 +44,7 @@ fun CustomerHomeScreen(
     onOpenBookings: () -> Unit,
     onOpenWallet: () -> Unit,
     onOpenHelp: () -> Unit,
+    onOpenFeedback: () -> Unit = {},
     onOpenAddresses: () -> Unit,
     onOpenSettings: () -> Unit = {},
     onAddProviderClick: () -> Unit,
@@ -346,6 +347,17 @@ fun CustomerHomeScreen(
                         }
                     },
                     icon = { Icon(Icons.Default.StarRate, contentDescription = null, tint = Color(0xFFFFA000)) },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                )
+
+                NavigationDrawerItem(
+                    label = { Text("Feedback & Suggestions", fontSize = 13.sp, fontWeight = FontWeight.SemiBold) },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        onOpenFeedback()
+                    },
+                    icon = { Icon(Icons.Default.Feedback, contentDescription = null, tint = PrimaryBlue) },
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
                 )
 
