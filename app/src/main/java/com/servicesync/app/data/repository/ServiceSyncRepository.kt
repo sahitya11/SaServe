@@ -35,6 +35,9 @@ class ServiceSyncRepository(private val context: Context) {
     private val _dismissedHomeBookingIds = MutableStateFlow<Set<String>>(emptySet())
     val dismissedHomeBookingIds: StateFlow<Set<String>> = _dismissedHomeBookingIds.asStateFlow()
 
+    private val _dismissedRatingBookingIds = MutableStateFlow<Set<String>>(emptySet())
+    val dismissedRatingBookingIds: StateFlow<Set<String>> = _dismissedRatingBookingIds.asStateFlow()
+
     private val _walletBalance = MutableStateFlow<Double>(0.0)
     val walletBalance: StateFlow<Double> = _walletBalance.asStateFlow()
 
@@ -175,10 +178,14 @@ class ServiceSyncRepository(private val context: Context) {
             _savedAddresses.value = emptyList()
         }
 
-        // 5. Dismissed Home Bookings
+        // 5. Dismissed Home Bookings & Ratings
         val savedDismissed = prefs.getStringSet(KEY_DISMISSED_HOME_BOOKINGS, null)
         if (savedDismissed != null) {
             _dismissedHomeBookingIds.value = savedDismissed
+        }
+        val savedDismissedRatings = prefs.getStringSet(KEY_DISMISSED_RATING_BOOKINGS, null)
+        if (savedDismissedRatings != null) {
+            _dismissedRatingBookingIds.value = savedDismissedRatings
         }
 
         // 6. Wallet Balance & Transactions
@@ -971,6 +978,10 @@ class ServiceSyncRepository(private val context: Context) {
         _bookings.value = updatedList
         saveBookings(updatedList)
 
+        // Mark as dismissed from home & rating prompt permanently
+        dismissRatingForm(bookingId)
+        dismissBookingFromHome(bookingId)
+
         // Add review to provider
         val currentProviders = _providers.value
         val providerIndex = currentProviders.indexOfFirst { it.id == currentBooking.providerId }
@@ -1017,6 +1028,12 @@ class ServiceSyncRepository(private val context: Context) {
         val updated = _dismissedHomeBookingIds.value + bookingId
         _dismissedHomeBookingIds.value = updated
         prefs.edit().putStringSet(KEY_DISMISSED_HOME_BOOKINGS, updated).apply()
+    }
+
+    fun dismissRatingForm(bookingId: String) {
+        val updated = _dismissedRatingBookingIds.value + bookingId
+        _dismissedRatingBookingIds.value = updated
+        prefs.edit().putStringSet(KEY_DISMISSED_RATING_BOOKINGS, updated).apply()
     }
 
     private fun saveWallet(balance: Double, txList: List<WalletTransaction>) {
@@ -1955,6 +1972,7 @@ class ServiceSyncRepository(private val context: Context) {
         private const val KEY_THEME_MODE = "key_theme_mode_v1"
         private const val KEY_PENDING_CANCELLATION_FEE = "key_pending_cancellation_fee_v1"
         private const val KEY_FEEDBACK_LIST = "key_feedback_list_v1"
+        private const val KEY_DISMISSED_RATING_BOOKINGS = "key_dismissed_rating_bookings_v1"
 
         @Volatile
         private var INSTANCE: ServiceSyncRepository? = null

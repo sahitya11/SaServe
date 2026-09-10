@@ -62,6 +62,7 @@ fun CustomerHomeScreen(
     val walletBalance by repository.walletBalance.collectAsState()
     val savedAddresses by repository.savedAddresses.collectAsState()
     val dismissedHomeIds by repository.dismissedHomeBookingIds.collectAsState()
+    val dismissedRatingIds by repository.dismissedRatingBookingIds.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") }
@@ -72,13 +73,19 @@ fun CustomerHomeScreen(
         it.status == BookingStatus.PENDING || it.status == BookingStatus.ACCEPTED || it.status == BookingStatus.IN_PROGRESS
     }
 
-    // Active home booking: pending, accepted, in progress, or completed awaiting feedback (and not dismissed)
-    val activeHomeBooking = bookings.firstOrNull { b ->
+    // 1. Completed service awaiting rating/feedback: appears on home screen if not filled in booking section and not cut/dismissed
+    val completedUnratedBooking = bookings.firstOrNull { b ->
+        b.status == BookingStatus.COMPLETED &&
+        b.customerRating == null &&
+        b.id !in dismissedRatingIds
+    }
+
+    // 2. Active ongoing booking (pending, accepted, in progress)
+    val ongoingHomeBooking = bookings.firstOrNull { b ->
         b.id !in dismissedHomeIds && (
             b.status == BookingStatus.PENDING ||
             b.status == BookingStatus.ACCEPTED ||
-            b.status == BookingStatus.IN_PROGRESS ||
-            (b.status == BookingStatus.COMPLETED && b.customerRating == null)
+            b.status == BookingStatus.IN_PROGRESS
         )
     }
 
@@ -515,27 +522,40 @@ fun CustomerHomeScreen(
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
             // Active / Recent Booking Notification Card (Dismissable via 'X' or once review submitted)
-            if (activeHomeBooking != null) {
+            // 1. Completed Service Rating & Feedback Form (Appears if not filled in booking section; if user cuts/dismisses it, it will not pop up again)
+            if (completedUnratedBooking != null) {
                 item {
-                    val isAccepted = activeHomeBooking.status == BookingStatus.ACCEPTED
-                    val isCompleted = activeHomeBooking.status == BookingStatus.COMPLETED
-                    val isInProgress = activeHomeBooking.status == BookingStatus.IN_PROGRESS
+                    HomeScreenCompletedRatingCard(
+                        booking = completedUnratedBooking,
+                        onDismiss = {
+                            repository.dismissRatingForm(completedUnratedBooking.id)
+                            Toast.makeText(context, "Rating dismissed", Toast.LENGTH_SHORT).show()
+                        },
+                        onSubmitRating = { rating, review ->
+                            repository.addReviewForBooking(
+                                bookingId = completedUnratedBooking.id,
+                                rating = rating,
+                                comment = review
+                            )
+                            Toast.makeText(context, "Thank you! Your feedback has been submitted.", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                }
+            }
 
-                    val cardBg = when {
-                        isCompleted -> StatusCompletedBg
-                        isAccepted || isInProgress -> StatusAcceptedBg
-                        else -> StatusPendingBg
-                    }
-                    val primaryColor = when {
-                        isCompleted -> StatusCompleted
-                        isAccepted || isInProgress -> StatusAccepted
-                        else -> StatusPending
-                    }
+            // 2. Ongoing Active Booking Notification Card (Pending, Accepted, In Progress)
+            if (ongoingHomeBooking != null) {
+                item {
+                    val isAccepted = ongoingHomeBooking.status == BookingStatus.ACCEPTED
+                    val isInProgress = ongoingHomeBooking.status == BookingStatus.IN_PROGRESS
+
+                    val cardBg = if (isAccepted || isInProgress) StatusAcceptedBg else StatusPendingBg
+                    val primaryColor = if (isAccepted || isInProgress) StatusAccepted else StatusPending
 
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onBookingSelected(activeHomeBooking) },
+                            .clickable { onBookingSelected(ongoingHomeBooking) },
                         shape = RoundedCornerShape(14.dp),
                         colors = CardDefaults.cardColors(containerColor = cardBg)
                     ) {
@@ -547,11 +567,7 @@ fun CustomerHomeScreen(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Icon(
-                                imageVector = when {
-                                    isCompleted -> Icons.Default.ThumbUp
-                                    isAccepted || isInProgress -> Icons.Default.CheckCircle
-                                    else -> Icons.Default.Schedule
-                                },
+                                imageVector = if (isAccepted || isInProgress) Icons.Default.CheckCircle else Icons.Default.Schedule,
                                 contentDescription = null,
                                 tint = primaryColor,
                                 modifier = Modifier.size(26.dp)
@@ -559,26 +575,24 @@ fun CustomerHomeScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = when {
-                                        isCompleted -> "🎉 Service completed! How was ${activeHomeBooking.providerName}?"
-                                        isAccepted -> "🎉 ${activeHomeBooking.providerName} accepted your request!"
-                                        isInProgress -> "⚡ Service in progress with ${activeHomeBooking.providerName}"
-                                        else -> "Request Pending: ${activeHomeBooking.category.displayName}"
+                                        isAccepted -> "🎉 ${ongoingHomeBooking.providerName} accepted your request!"
+                                        isInProgress -> "⚡ Service in progress with ${ongoingHomeBooking.providerName}"
+                                        else -> "Request Pending: ${ongoingHomeBooking.category.displayName}"
                                     },
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = primaryColor
                                 )
                                 Text(
-                                    text = if (isCompleted) "Tap to rate service or dismiss"
-                                    else "${activeHomeBooking.scheduledDate} • ${activeHomeBooking.scheduledSlot}",
+                                    text = "${ongoingHomeBooking.scheduledDate} • ${ongoingHomeBooking.scheduledSlot}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = TextPrimary
                                 )
                             }
 
-                            // Dismiss / Cut-out button (X) removes from home while keeping in booking history
+                            // Dismiss / Cut-out button (X) removes ongoing booking card from home
                             IconButton(
-                                onClick = { repository.dismissBookingFromHome(activeHomeBooking.id) },
+                                onClick = { repository.dismissBookingFromHome(ongoingHomeBooking.id) },
                                 modifier = Modifier.size(28.dp)
                             ) {
                                 Icon(
@@ -3798,5 +3812,263 @@ fun detectCurrentGpsLocation(context: android.content.Context, onResult: (String
         onResult("Current GPS Location (Location Provider)")
     }
 }
+
+@Composable
+fun HomeScreenCompletedRatingCard(
+    booking: Booking,
+    onDismiss: () -> Unit,
+    onSubmitRating: (Float, String) -> Unit
+) {
+    var selectedStars by remember(booking.id) { mutableStateOf(5f) }
+    var reviewComment by remember(booking.id) { mutableStateOf("") }
+    var selectedQuickTags by remember(booking.id) { mutableStateOf(setOf<String>()) }
+
+    val positiveTags = listOf("Punctual ⏱️", "Clean Work 🧼", "Polite Specialist 🤝", "Expert Skills 🛠️", "Fair Price 💰")
+    val constructiveTags = listOf("Delayed Arrival ⏳", "Unprofessional ⚠️", "Messy Work ❌", "Pricing Dispute 💸", "Incomplete ⚠️")
+    val activeTags = if (selectedStars >= 4f) positiveTags else constructiveTags
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+        border = BorderStroke(1.5.dp, PrimaryBlue.copy(alpha = 0.35f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Header with Specialist Info, Completion Badge & Cut (X) button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(StatusCompletedBg),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ThumbUp,
+                            contentDescription = null,
+                            tint = StatusCompleted,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "Service Completed! 🎉",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = TextPrimary
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = StatusCompletedBg
+                            ) {
+                                Text(
+                                    text = "RATE SERVICE",
+                                    color = StatusCompleted,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                        Text(
+                            text = "How was ${booking.providerName} (${booking.category.displayName})?",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary,
+                            maxLines = 1
+                        )
+                    }
+                }
+
+                // The Cut / Dismiss (X) button: permanently removes this rating form from home screen
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(SurfaceVariantLight)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Cut rating form",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
+            HorizontalDivider(color = CardBorder, thickness = 0.8.dp)
+
+            // Star Rating Section
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    (1..5).forEach { star ->
+                        IconButton(
+                            onClick = { selectedStars = star.toFloat() },
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (star <= selectedStars) Icons.Default.Star else Icons.Default.StarOutline,
+                                contentDescription = "$star Stars",
+                                tint = if (star <= selectedStars) StarGold else TextMuted,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+                }
+
+                val starLabel = when (selectedStars.toInt()) {
+                    1 -> "😞 1 / 5 - Poor Experience"
+                    2 -> "😐 2 / 5 - Fair Experience"
+                    3 -> "🙂 3 / 5 - Good Service"
+                    4 -> "😊 4 / 5 - Very Good Service"
+                    else -> "🤩 5 / 5 - Excellent Service"
+                }
+                Text(
+                    text = starLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (selectedStars >= 4f) PrimaryBlue else StatusPending
+                )
+            }
+
+            // Quick Feedback Chips Row
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(activeTags) { tag ->
+                    val isTagSelected = tag in selectedQuickTags
+                    Surface(
+                        onClick = {
+                            selectedQuickTags = if (isTagSelected) {
+                                selectedQuickTags - tag
+                            } else {
+                                selectedQuickTags + tag
+                            }
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isTagSelected) PrimaryBlue.copy(alpha = 0.15f) else SurfaceVariantLight,
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = if (isTagSelected) PrimaryBlue else CardBorder
+                        )
+                    ) {
+                        Text(
+                            text = tag,
+                            fontSize = 11.sp,
+                            fontWeight = if (isTagSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isTagSelected) PrimaryBlue else TextSecondary,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                        )
+                    }
+                }
+            }
+
+            // Optional Feedback / Review Text Field
+            OutlinedTextField(
+                value = reviewComment,
+                onValueChange = { reviewComment = it },
+                placeholder = {
+                    Text(
+                        text = "Add feedback or review for ${booking.providerName} (optional)...",
+                        color = TextMuted,
+                        fontSize = 13.sp
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2,
+                maxLines = 3,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = PrimaryBlue,
+                    unfocusedBorderColor = CardBorder,
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary
+                ),
+                shape = RoundedCornerShape(10.dp)
+            )
+
+            // Action Buttons: "Not Now" (cuts form without filling) & "Submit Rating"
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(42.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, CardBorder)
+                ) {
+                    Text(
+                        text = "Not Now",
+                        color = TextSecondary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        val tagsPart = if (selectedQuickTags.isNotEmpty()) selectedQuickTags.joinToString(", ") else ""
+                        val combinedReview = when {
+                            reviewComment.isNotBlank() && tagsPart.isNotBlank() -> "$tagsPart - $reviewComment"
+                            reviewComment.isNotBlank() -> reviewComment
+                            tagsPart.isNotBlank() -> tagsPart
+                            else -> "Service completed with ${booking.providerName}. Rated ${selectedStars.toInt()}/5 stars."
+                        }
+                        onSubmitRating(selectedStars, combinedReview)
+                    },
+                    modifier = Modifier
+                        .weight(1.5f)
+                        .height(42.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Submit Rating",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 
