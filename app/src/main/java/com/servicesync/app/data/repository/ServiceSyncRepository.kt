@@ -5,16 +5,23 @@ import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.servicesync.app.data.firebase.FirebaseAuthService
+import com.servicesync.app.data.firebase.FirebaseSyncService
 import com.servicesync.app.data.model.*
 import com.servicesync.app.notification.NotificationHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 class ServiceSyncRepository(private val context: Context) {
 
     val firebaseAuthService: FirebaseAuthService = FirebaseAuthService()
+    val firebaseSyncService: FirebaseSyncService = FirebaseSyncService()
+    private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private val prefs: SharedPreferences =
         context.getSharedPreferences("servicesync_prefs", Context.MODE_PRIVATE)
@@ -61,6 +68,26 @@ class ServiceSyncRepository(private val context: Context) {
 
     init {
         loadOrInitializeData()
+        repositoryScope.launch {
+            try {
+                // Upload all previous data (providers, bookings, feedback, users) to Cloud Firestore
+                syncAllDataToFirebase()
+                // Fetch and merge any specialists existing in Firebase
+                firebaseSyncService.fetchProviders().onSuccess { remoteProviders ->
+                    if (remoteProviders.isNotEmpty()) {
+                        val localIds = _providers.value.map { it.id }.toSet()
+                        val newFromRemote = remoteProviders.filter { it.id !in localIds }
+                        if (newFromRemote.isNotEmpty()) {
+                            val merged = _providers.value + newFromRemote
+                            _providers.value = merged
+                            saveProvidersLocally(merged)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // Background sync gracefully non-blocking
+            }
+        }
     }
 
     private fun loadOrInitializeData() {
@@ -273,6 +300,10 @@ class ServiceSyncRepository(private val context: Context) {
         _notifications.value = updatedNotifs
         saveNotifications(updatedNotifs)
 
+        repositoryScope.launch {
+            firebaseSyncService.syncFeedback(feedback)
+        }
+
         return feedback
     }
 
@@ -286,12 +317,22 @@ class ServiceSyncRepository(private val context: Context) {
         prefs.edit().putString(KEY_THEME_MODE, mode.name).apply()
     }
 
+    private fun saveProvidersLocally(list: List<ServiceProvider>) {
+        prefs.edit().putString(KEY_CUSTOM_PROVIDERS, gson.toJson(list)).apply()
+    }
+
     private fun saveProviders(list: List<ServiceProvider>) {
         prefs.edit().putString(KEY_CUSTOM_PROVIDERS, gson.toJson(list)).apply()
+        repositoryScope.launch {
+            firebaseSyncService.syncAllProviders(list)
+        }
     }
 
     private fun saveBookings(list: List<Booking>) {
         prefs.edit().putString(KEY_CUSTOM_BOOKINGS, gson.toJson(list)).apply()
+        repositoryScope.launch {
+            firebaseSyncService.syncAllBookings(list)
+        }
     }
 
     private fun saveNotifications(list: List<AppNotification>) {
@@ -303,6 +344,9 @@ class ServiceSyncRepository(private val context: Context) {
             prefs.edit().remove(KEY_CURRENT_USER).apply()
         } else {
             prefs.edit().putString(KEY_CURRENT_USER, gson.toJson(user)).apply()
+            repositoryScope.launch {
+                firebaseSyncService.syncUser(user)
+            }
         }
     }
 
@@ -637,11 +681,27 @@ class ServiceSyncRepository(private val context: Context) {
 
     private fun saveRegisteredUsers(users: List<User>) {
         prefs.edit().putString(KEY_REGISTERED_USERS, gson.toJson(users)).apply()
+        repositoryScope.launch {
+            firebaseSyncService.syncAllUsers(users)
+        }
+    }
+
+    /**
+     * Manually triggers full synchronization of local data to Cloud Firestore.
+     */
+    suspend fun syncAllDataToFirebase(): Map<String, Int> {
+        return firebaseSyncService.syncAllInitialData(
+            providers = _providers.value,
+            bookings = _bookings.value,
+            feedback = _feedbackList.value,
+            users = getRegisteredUsers()
+        )
     }
 
     /**
      * Adds a new service provider.
      * ONLY service providers added through this will be visible in the application.
+     * Automatically synchronizes the new specialist to Cloud Firestore.
      */
     fun addServiceProvider(
         name: String,
@@ -694,6 +754,9 @@ class ServiceSyncRepository(private val context: Context) {
         val updated = listOf(newProvider) + _providers.value
         _providers.value = updated
         saveProviders(updated)
+        repositoryScope.launch {
+            firebaseSyncService.syncProvider(newProvider)
+        }
 
         // Add a notification that a new specialist was added
         val notif = AppNotification(

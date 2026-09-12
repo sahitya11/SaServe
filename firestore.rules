@@ -7,5 +7,20 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Service Providers: readable and writable for specialist catalog synchronization
+    match /providers/{providerId} {
+      allow read, write: if true;
+    }
+
+    // Bookings: readable and writable for service appointments & status tracking
+    match /bookings/{bookingId} {
+      allow read, write: if true;
+    }
+
+    // Feedback: readable and writable for customer feedback and quality reviews
+    match /feedback/{feedbackId} {
+      allow read, write: if true;
+    }
   }
 }
