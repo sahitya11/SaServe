@@ -84,9 +84,9 @@ fun MainAppHost(initialNavTarget: String?, repository: ServiceSyncRepository) {
 
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Splash) }
 
-    // 2-Second Fullscreen SaServe Splash Screen Transition
+    // 1-Second Fullscreen SaServe Splash Screen Transition
     LaunchedEffect(Unit) {
-        delay(2000)
+        delay(1000)
         currentScreen = if (!repository.isUserLoggedIn()) {
             Screen.Auth
         } else {

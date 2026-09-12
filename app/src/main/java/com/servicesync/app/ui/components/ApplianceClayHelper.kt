@@ -54,7 +54,7 @@ fun getApplianceClayDrawable(itemId: String): Int {
         "carp_bed" -> R.drawable.clay_bed
         "carp_window" -> R.drawable.clay_window
         "carp_kitchen" -> R.drawable.clay_chimney
-        "carp_polish" -> R.drawable.clay_saw
+        "carp_polish" -> R.drawable.clay_wood_polish
         "carp_mount" -> R.drawable.clay_drill_mount
 
         // Mechanic / Auto

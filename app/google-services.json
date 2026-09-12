@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "610851143899",
+    "project_id": "saserve",
+    "storage_bucket": "saserve.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:610851143899:android:861763075fcce861ea8cfe",
+        "android_client_info": {
+          "package_name": "com.servicesync.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCv4OWEaHjZBqaXLQxPM14JpMhIsGFymcg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
