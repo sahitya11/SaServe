@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.servicesync.app.data.firebase.FirebaseAuthService
 import com.servicesync.app.data.model.*
 import com.servicesync.app.notification.NotificationHelper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,6 +13,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.UUID
 
 class ServiceSyncRepository(private val context: Context) {
+
+    val firebaseAuthService: FirebaseAuthService = FirebaseAuthService()
 
     private val prefs: SharedPreferences =
         context.getSharedPreferences("servicesync_prefs", Context.MODE_PRIVATE)
@@ -562,7 +565,53 @@ class ServiceSyncRepository(private val context: Context) {
         return false
     }
 
+    suspend fun registerWithFirebase(
+        username: String,
+        email: String,
+        password: String,
+        phone: String = ""
+    ): Result<User> {
+        val result = firebaseAuthService.registerUser(username, email, password, phone)
+        result.onSuccess { user ->
+            _currentUser.value = user
+            _savedAddresses.value = emptyList()
+            _isLoggedIn.value = true
+            saveUser(user)
+            prefs.edit().putString(KEY_LOGGED_IN_PHONE, user.phone.ifBlank { user.email }).apply()
+
+            val welcomeNotif = AppNotification(
+                id = UUID.randomUUID().toString(),
+                title = "Welcome to SaServe! 🎉",
+                message = "Hello ${user.name}! Your account has been registered with Firebase."
+            )
+            val updatedNotifs = listOf(welcomeNotif) + _notifications.value
+            _notifications.value = updatedNotifs
+            saveNotifications(updatedNotifs)
+        }
+        return result
+    }
+
+    suspend fun loginWithFirebase(
+        email: String,
+        password: String
+    ): Result<User> {
+        val result = firebaseAuthService.loginUser(email, password)
+        result.onSuccess { user ->
+            _currentUser.value = user
+            _savedAddresses.value = user.safeSavedAddresses
+            _isLoggedIn.value = true
+            saveUser(user)
+            prefs.edit().putString(KEY_LOGGED_IN_PHONE, user.phone.ifBlank { user.email }).apply()
+        }
+        return result
+    }
+
     fun logoutCustomer() {
+        try {
+            firebaseAuthService.signOut()
+        } catch (e: Exception) {
+            // Ignore if Firebase was not initialized
+        }
         _currentUser.value = null
         _isLoggedIn.value = false
         prefs.edit().remove(KEY_LOGGED_IN_PHONE).remove(KEY_CURRENT_USER).apply()
