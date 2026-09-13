@@ -410,7 +410,103 @@ fun SettingsScreen(
                 }
             }
 
-            // 5. About SaServe Platform
+            // 5. Firebase Cloud Database Sync
+            var isSyncingFirebase by remember { mutableStateOf(false) }
+            Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                border = BorderStroke(1.dp, CardBorder),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(StatusAccepted.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Sync,
+                                contentDescription = null,
+                                tint = StatusAccepted,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Cloud Database Sync",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = "Firebase Cloud Firestore (saserve)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = StatusAccepted.copy(alpha = 0.15f)
+                        ) {
+                            Text(
+                                text = "CONNECTED",
+                                color = StatusAccepted,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "Synchronize local specialists, appointments, reviews, and user accounts with Google Cloud Firestore in real time.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                isSyncingFirebase = true
+                                try {
+                                    val result = repository.syncAllDataToFirebase()
+                                    val count = result["providers"] ?: 0
+                                    snackbarHostState.showSnackbar("Synced $count specialists & all data to Firebase!")
+                                } catch (e: Exception) {
+                                    snackbarHostState.showSnackbar("Sync error: ${e.message}")
+                                } finally {
+                                    isSyncingFirebase = false
+                                }
+                            }
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isSyncingFirebase
+                    ) {
+                        if (isSyncingFirebase) {
+                            CircularProgressIndicator(color = Color(0xFF0A0C0E), modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Syncing to Firebase...", color = Color(0xFF0A0C0E), fontWeight = FontWeight.Bold)
+                        } else {
+                            Icon(Icons.Default.Cloud, contentDescription = null, tint = Color(0xFF0A0C0E))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Sync All Data to Firebase", color = Color(0xFF0A0C0E), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // 6. About SaServe Platform
             Card(
                 shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(containerColor = SurfaceLight),

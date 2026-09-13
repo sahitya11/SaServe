@@ -44,17 +44,15 @@ class FirebaseSyncService(
 
     suspend fun syncAllProviders(providers: List<ServiceProvider>): Result<Int> {
         return try {
-            var count = 0
+            if (providers.isEmpty()) return Result.success(0)
+            val batch = firestore.batch()
             for (provider in providers) {
-                val data = providerToMap(provider)
-                firestore.collection(COLLECTION_PROVIDERS)
-                    .document(provider.id)
-                    .set(data, SetOptions.merge())
-                    .await()
-                count++
+                val docRef = firestore.collection(COLLECTION_PROVIDERS).document(provider.id)
+                batch.set(docRef, providerToMap(provider), SetOptions.merge())
             }
-            Log.d(TAG, "All $count providers successfully synced to Firestore.")
-            Result.success(count)
+            batch.commit().await()
+            Log.d(TAG, "All ${providers.size} providers successfully batch-synced to Firestore.")
+            Result.success(providers.size)
         } catch (e: Exception) {
             Log.e(TAG, "Error during bulk provider sync", e)
             Result.failure(e)
@@ -94,17 +92,15 @@ class FirebaseSyncService(
 
     suspend fun syncAllBookings(bookings: List<Booking>): Result<Int> {
         return try {
-            var count = 0
+            if (bookings.isEmpty()) return Result.success(0)
+            val batch = firestore.batch()
             for (booking in bookings) {
-                val data = bookingToMap(booking)
-                firestore.collection(COLLECTION_BOOKINGS)
-                    .document(booking.id)
-                    .set(data, SetOptions.merge())
-                    .await()
-                count++
+                val docRef = firestore.collection(COLLECTION_BOOKINGS).document(booking.id)
+                batch.set(docRef, bookingToMap(booking), SetOptions.merge())
             }
-            Log.d(TAG, "All $count bookings successfully synced to Firestore.")
-            Result.success(count)
+            batch.commit().await()
+            Log.d(TAG, "All ${bookings.size} bookings successfully batch-synced to Firestore.")
+            Result.success(bookings.size)
         } catch (e: Exception) {
             Log.e(TAG, "Error during bulk booking sync", e)
             Result.failure(e)
@@ -142,17 +138,15 @@ class FirebaseSyncService(
 
     suspend fun syncAllFeedback(feedbackList: List<AppFeedback>): Result<Int> {
         return try {
-            var count = 0
+            if (feedbackList.isEmpty()) return Result.success(0)
+            val batch = firestore.batch()
             for (fb in feedbackList) {
-                val data = feedbackToMap(fb)
-                firestore.collection(COLLECTION_FEEDBACK)
-                    .document(fb.id)
-                    .set(data, SetOptions.merge())
-                    .await()
-                count++
+                val docRef = firestore.collection(COLLECTION_FEEDBACK).document(fb.id)
+                batch.set(docRef, feedbackToMap(fb), SetOptions.merge())
             }
-            Log.d(TAG, "All $count feedback items synced to Firestore.")
-            Result.success(count)
+            batch.commit().await()
+            Log.d(TAG, "All ${feedbackList.size} feedback items batch-synced to Firestore.")
+            Result.success(feedbackList.size)
         } catch (e: Exception) {
             Log.e(TAG, "Error during bulk feedback sync", e)
             Result.failure(e)
@@ -180,17 +174,15 @@ class FirebaseSyncService(
 
     suspend fun syncAllUsers(users: List<User>): Result<Int> {
         return try {
-            var count = 0
+            if (users.isEmpty()) return Result.success(0)
+            val batch = firestore.batch()
             for (user in users) {
-                val data = userToMap(user)
-                firestore.collection(COLLECTION_USERS)
-                    .document(user.id)
-                    .set(data, SetOptions.merge())
-                    .await()
-                count++
+                val docRef = firestore.collection(COLLECTION_USERS).document(user.id)
+                batch.set(docRef, userToMap(user), SetOptions.merge())
             }
-            Log.d(TAG, "All $count users synced to Firestore.")
-            Result.success(count)
+            batch.commit().await()
+            Log.d(TAG, "All ${users.size} users batch-synced to Firestore.")
+            Result.success(users.size)
         } catch (e: Exception) {
             Log.e(TAG, "Error during bulk user sync", e)
             Result.failure(e)
