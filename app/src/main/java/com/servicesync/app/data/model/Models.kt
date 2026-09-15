@@ -108,7 +108,8 @@ data class User(
     val role: UserRole = UserRole.CUSTOMER,
     val address: String = "",
     val savedAddresses: List<SavedAddress>? = emptyList(),
-    val providerId: String? = null // Linked if role == PROVIDER
+    val providerId: String? = null, // Linked if role == PROVIDER
+    val profileImageUri: String? = null
 ) {
     val safeSavedAddresses: List<SavedAddress>
         get() = savedAddresses ?: emptyList()
@@ -180,9 +181,12 @@ data class Booking(
     val customerRating: Float? = null,
     val customerReview: String? = null,
     val cancellationReason: String? = null,
-    val cancellationFee: Double = 0.0
+    val cancellationFee: Double = 0.0,
+    val tipAmount: Double = 0.0
 ) {
-    val totalAmount: Double get() = (hourlyRate * estimatedHours) + cancellationFee
+    val totalAmount: Double get() = (hourlyRate * estimatedHours) + cancellationFee + tipAmount
+    val displayBookingId: String
+        get() = if (id.startsWith("10") && id.length == 10 && id.all { it.isDigit() }) id else "10" + Math.abs(id.hashCode()).toString().padStart(8, '0').take(8)
 }
 
 data class AppNotification(

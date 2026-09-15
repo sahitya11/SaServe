@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.servicesync.app.R
 import com.servicesync.app.data.model.BookingStatus
 import com.servicesync.app.data.model.ServiceCategory
 import com.servicesync.app.data.model.ServiceProvider
@@ -187,19 +188,19 @@ fun ProviderCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Avatar with initials
+                // Specialist Avatar Picture
                 Box(
                     modifier = Modifier
                         .size(52.dp)
                         .clip(CircleShape)
-                        .background(PrimaryBlue),
+                        .border(1.5.dp, PrimaryBlue, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = provider.name.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString(""),
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = getSpecialistAvatarDrawable(provider.category)),
+                        contentDescription = provider.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
                     )
                 }
 
@@ -323,5 +324,16 @@ fun ProviderCard(
                 }
             }
         }
+    }
+}
+
+fun getSpecialistAvatarDrawable(category: ServiceCategory): Int {
+    return when (category) {
+        ServiceCategory.ELECTRICIAN -> R.drawable.specialist_electrician
+        ServiceCategory.PLUMBER -> R.drawable.specialist_plumber
+        ServiceCategory.CARPENTER -> R.drawable.specialist_carpenter
+        ServiceCategory.MECHANIC -> R.drawable.specialist_mechanic
+        ServiceCategory.HOUSE_CLEANING -> R.drawable.specialist_cleaner
+        else -> R.drawable.specialist_default
     }
 }

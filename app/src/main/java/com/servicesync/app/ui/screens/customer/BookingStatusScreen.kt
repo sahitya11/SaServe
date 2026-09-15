@@ -22,11 +22,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import com.servicesync.app.data.model.Booking
 import com.servicesync.app.data.model.BookingStatus
 import com.servicesync.app.data.repository.ServiceSyncRepository
 import com.servicesync.app.ui.components.StatusBadge
 import com.servicesync.app.ui.components.getCategoryIcon
+import com.servicesync.app.ui.components.getSpecialistAvatarDrawable
 import com.servicesync.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,37 +66,6 @@ fun BookingStatusScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundLight)
             )
-        },
-        bottomBar = {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shadowElevation = 8.dp,
-                color = SurfaceLight
-            ) {
-                Row(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onBackToHome,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text("Explore Services")
-                    }
-
-                    Button(
-                        onClick = onViewAllBookings,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                    ) {
-                        Text("All Bookings")
-                    }
-                }
-            }
         },
         containerColor = BackgroundLight
     ) { padding ->
@@ -340,46 +318,8 @@ fun BookingStatusScreen(
                             }
                         }
 
-                        // OTP 2: Service Completion OTP (Only revealed once service starts)
-                        if (booking.status == BookingStatus.ACCEPTED) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = BackgroundLight.copy(alpha = 0.6f),
-                                border = BorderStroke(1.dp, CardBorder.copy(alpha = 0.5f)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(14.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Icon(Icons.Default.Lock, null, tint = TextMuted, modifier = Modifier.size(20.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = "2. Completion OTP (Locked)",
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = TextSecondary
-                                        )
-                                        Text(
-                                            text = "Revealed once work begins. Share after job completion.",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = TextMuted
-                                        )
-                                    }
-                                    Text(
-                                        text = "••••",
-                                        fontFamily = FontFamily.Monospace,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = TextMuted,
-                                        letterSpacing = 2.sp
-                                    )
-                                }
-                            }
-                        } else {
+                        // OTP 2: Service Completion OTP (Only revealed once service starts and Start OTP is entered)
+                        if (booking.status == BookingStatus.IN_PROGRESS || booking.status == BookingStatus.COMPLETED) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
                                 color = BackgroundLight,
@@ -686,17 +626,16 @@ fun BookingStatusScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(52.dp)
+                                    .size(54.dp)
                                     .clip(CircleShape)
-                                    .background(PrimaryBlue),
+                                    .border(1.5.dp, PrimaryBlue, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
-                                val initials = booking.providerName.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString("").ifBlank { "SP" }
-                                Text(
-                                    text = initials,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp
+                                Image(
+                                    painter = painterResource(id = getSpecialistAvatarDrawable(booking.category)),
+                                    contentDescription = booking.providerName,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
                                 )
                             }
 
@@ -729,6 +668,11 @@ fun BookingStatusScreen(
                 }
             }
 
+            // Google Maps Live GPS Tracking View (Shown when specialist is assigned and on the way / in progress)
+            if (booking.status == BookingStatus.ACCEPTED || booking.status == BookingStatus.IN_PROGRESS) {
+                GoogleMapsLiveTrackingCard(booking = booking)
+            }
+
             // 4. Appointment Details Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -748,7 +692,13 @@ fun BookingStatusScreen(
 
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Icon(Icons.Default.CalendarToday, null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
-                        Text(text = "${booking.scheduledDate} (${booking.scheduledSlot})", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                        val formattedTime = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault()).format(java.util.Date(booking.createdAt))
+                        val displaySchedule = if (booking.scheduledSlot.contains("Immediate", ignoreCase = true)) {
+                            "${booking.scheduledDate} at $formattedTime"
+                        } else {
+                            "${booking.scheduledDate} (${booking.scheduledSlot})"
+                        }
+                        Text(text = displaySchedule, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -769,13 +719,388 @@ fun BookingStatusScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(text = "Booking ID", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                        Text(text = "#${booking.id}", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                        Text(text = "#${booking.displayBookingId}", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
+
+            // 5. Specialist Tipping Card (Beneath Appointment Summary)
+            SpecialistTippingCard(
+                booking = booking,
+                onTipSelected = { tip ->
+                    repository.addTipToBooking(booking.id, tip)
+                }
+            )
 
             Spacer(modifier = Modifier.height(30.dp))
         }
     }
 }
+
+/**
+ * High-fidelity Google Maps Live Specialist Tracking Card
+ */
+@Composable
+fun GoogleMapsLiveTrackingCard(booking: Booking) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Header with Live Status
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(StatusAccepted)
+                    )
+                    Text(
+                        text = "Live Google Maps Tracking",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = PrimaryBlue.copy(alpha = 0.12f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(Icons.Default.Navigation, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(12.dp))
+                        Text(
+                            text = "GPS Active",
+                            color = PrimaryBlue,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            // Stylized Dark Google Maps Canvas
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFF1B2333))
+                    .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+            ) {
+                // Map Background Grid & Polyline Route Canvas
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val w = size.width
+                    val h = size.height
+
+                    val streetColor = Color(0xFF253147)
+                    val highwayColor = Color(0xFF334260)
+
+                    // Draw secondary streets
+                    var y = 25f
+                    while (y < h) {
+                        drawLine(streetColor, Offset(0f, y), Offset(w, y), strokeWidth = 2.5f)
+                        y += 35f
+                    }
+                    var x = 30f
+                    while (x < w) {
+                        drawLine(streetColor, Offset(x, 0f), Offset(x, h), strokeWidth = 2.5f)
+                        x += 45f
+                    }
+
+                    // Main boulevard highways
+                    drawLine(highwayColor, Offset(0f, h * 0.6f), Offset(w, h * 0.45f), strokeWidth = 8f)
+                    drawLine(highwayColor, Offset(w * 0.45f, 0f), Offset(w * 0.55f, h), strokeWidth = 8f)
+
+                    // Navigation Route Path (Blue Glowing Polyline)
+                    val path = Path().apply {
+                        moveTo(w * 0.2f, h * 0.72f) // Specialist start
+                        cubicTo(
+                            w * 0.35f, h * 0.62f,
+                            w * 0.5f, h * 0.5f,
+                            w * 0.78f, h * 0.3f // Customer home
+                        )
+                    }
+
+                    // Route outer glow
+                    drawPath(
+                        path = path,
+                        color = PrimaryBlue.copy(alpha = 0.35f),
+                        style = Stroke(width = 12f)
+                    )
+                    // Route dash polyline
+                    drawPath(
+                        path = path,
+                        color = PrimaryBlue,
+                        style = Stroke(
+                            width = 5f,
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 10f), 0f)
+                        )
+                    )
+                }
+
+                // Specialist Marker (Left Bottom on Route)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 24.dp, bottom = 26.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = PrimaryBlue,
+                            shadowElevation = 4.dp
+                        ) {
+                            Text(
+                                text = "${booking.providerName} (En Route)",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(PrimaryBlue)
+                                .border(2.dp, Color.White, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.TwoWheeler,
+                                contentDescription = "Specialist en route",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Customer Home Pin (Top Right on Route)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 20.dp, end = 32.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = StatusCompleted,
+                            shadowElevation = 4.dp
+                        ) {
+                            Text(
+                                text = "Your Address",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(StatusCompleted)
+                                .border(2.dp, Color.White, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Home,
+                                contentDescription = "Home",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Google Watermark badge at bottom right
+                Text(
+                    text = "Google Maps Live",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(8.dp)
+                )
+            }
+
+            // ETA and Distance Status Bar
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = SurfaceVariantLight,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Default.AccessTime, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                        Column {
+                            Text(
+                                text = "Expected Arrival: 15–25 mins",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = "Distance: 2.1 km away • Moving towards your location",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary
+                            )
+                        }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = StatusAcceptedBg
+                    ) {
+                        Text(
+                            text = "EN ROUTE",
+                            color = StatusAccepted,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Specialist Tipping Card with selectable tip options updating final bill
+ */
+@Composable
+fun SpecialistTippingCard(
+    booking: Booking,
+    onTipSelected: (Double) -> Unit
+) {
+    val tipOptions = listOf(10.0, 20.0, 50.0, 100.0)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(Icons.Default.Favorite, contentDescription = null, tint = AccentGold)
+                Text(
+                    text = "Tip Your Specialist",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Text(
+                text = "Show appreciation for ${booking.providerName}'s prompt and dedicated service. 100% of your tip goes directly to the specialist.",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary
+            )
+
+            // Tip Option Buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                tipOptions.forEach { tip ->
+                    val isSelected = booking.tipAmount == tip
+                    OutlinedButton(
+                        onClick = {
+                            if (isSelected) {
+                                onTipSelected(0.0)
+                            } else {
+                                onTipSelected(tip)
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = if (isSelected) ButtonDefaults.buttonColors(containerColor = AccentGold) else ButtonDefaults.outlinedButtonColors(),
+                        border = BorderStroke(1.dp, if (isSelected) AccentGold else CardBorder),
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "+₹${tip.toInt()}",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = if (isSelected) Color.White else TextPrimary
+                        )
+                    }
+                }
+            }
+
+            // Summary of price with tip
+            if (booking.tipAmount > 0.0) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = AccentGold.copy(alpha = 0.12f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "✓ ₹${booking.tipAmount.toInt()} Tip Added for ${booking.providerName}",
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Text(
+                                text = "Base Rate: ₹${booking.hourlyRate.toInt()} + Tip: ₹${booking.tipAmount.toInt()}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary
+                            )
+                        }
+
+                        Text(
+                            text = "₹${(booking.hourlyRate + booking.tipAmount).toInt()}",
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 16.sp,
+                            color = PrimaryBlue
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 

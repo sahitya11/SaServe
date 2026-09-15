@@ -72,6 +72,7 @@ sealed class Screen {
     object HelpSupport : Screen()
     object Feedback : Screen()
     object ManageAddresses : Screen()
+    object MyProfile : Screen()
 }
 
 
@@ -195,6 +196,9 @@ fun MainAppHost(initialNavTarget: String?, repository: ServiceSyncRepository) {
                         onOpenSettings = {
                             currentScreen = Screen.Settings
                         },
+                        onOpenProfile = {
+                            currentScreen = Screen.MyProfile
+                        },
                         onLogoutClick = {
                             repository.logoutCustomer()
                             currentScreen = Screen.Auth
@@ -304,6 +308,13 @@ fun MainAppHost(initialNavTarget: String?, repository: ServiceSyncRepository) {
                         onBackClick = { currentScreen = Screen.CustomerHome }
                     )
                 }
+
+                is Screen.MyProfile -> {
+                    MyProfileScreen(
+                        repository = repository,
+                        onBackClick = { currentScreen = Screen.CustomerHome }
+                    )
+                }
             }
         }
     }
@@ -323,17 +334,55 @@ fun SplashScreen() {
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(24.dp)
         ) {
-            // Official SaServe Logo Component with Spiral, SaServe Typography & Subtitle
-            Image(
-                painter = painterResource(id = R.drawable.saserve_logo),
-                contentDescription = "SaServe Logo",
+            // Official Centered SaServe Emblem
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .aspectRatio(1f),
-                contentScale = ContentScale.Fit
+                    .size(135.dp)
+                    .clip(CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.saserve_seamless_logo),
+                    contentDescription = "SaServe Logo",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Prominent, Highly Legible Typography (Increased Font Size)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Sa",
+                    color = PrimaryBlue,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp
+                )
+                Text(
+                    text = "Serve",
+                    color = Color.White,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "ON-DEMAND HOME SERVICES & SPECIALISTS",
+                color = AccentSky.copy(alpha = 0.9f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.8.sp
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(36.dp))
 
             CircularProgressIndicator(
                 color = SecondaryTeal, // Electric Cyan

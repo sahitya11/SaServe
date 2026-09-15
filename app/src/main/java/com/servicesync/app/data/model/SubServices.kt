@@ -702,7 +702,7 @@ fun getSubServicesForCategory(category: ServiceCategory): List<SubServiceItem> {
                 icon = Icons.Default.HomeRepairService,
                 isPopular = true,
                 tag = "ESSENTIAL",
-                includes = listOf("High performance polymer barrier coat", "Expansion joint & crack mesh sealing", "Moisture barrier warranty")
+                includes = listOf("High performance polymer barrier coat", "Expansion joint & crack mesh sealing", "Moisture barrier protection")
             ),
             SubServiceItem(
                 id = "paint_enamel",

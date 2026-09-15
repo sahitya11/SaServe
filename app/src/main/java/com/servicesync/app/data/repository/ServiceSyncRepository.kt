@@ -58,7 +58,7 @@ class ServiceSyncRepository(private val context: Context) {
     private val _savedAddresses = MutableStateFlow<List<SavedAddress>>(emptyList())
     val savedAddresses: StateFlow<List<SavedAddress>> = _savedAddresses.asStateFlow()
 
-    private val _themeMode = MutableStateFlow<AppThemeMode>(AppThemeMode.SYSTEM)
+    private val _themeMode = MutableStateFlow<AppThemeMode>(AppThemeMode.DARK)
     val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
 
     private val _pendingCancellationFee = MutableStateFlow<Double>(0.0)
@@ -316,8 +316,8 @@ class ServiceSyncRepository(private val context: Context) {
             _dismissedRatingBookingIds.value = savedDismissedRatings
         }
 
-        // 6. Wallet Balance & Transactions
-        val savedBalance = prefs.getFloat(KEY_WALLET_BALANCE, 500.0f).toDouble()
+        // 6. Wallet Balance & Transactions (Default Sign-up Bonus: Exactly ₹100)
+        val savedBalance = prefs.getFloat(KEY_WALLET_BALANCE, 100.0f).toDouble()
         _walletBalance.value = savedBalance
 
         val savedTxJson = prefs.getString(KEY_WALLET_TRANSACTIONS, null)
@@ -328,15 +328,15 @@ class ServiceSyncRepository(private val context: Context) {
             val initialTx = listOf(
                 WalletTransaction(
                     id = "tx_welcome",
-                    amount = 500.0,
+                    amount = 100.0,
                     type = "DEPOSIT",
-                    description = "Welcome Bonus Added to SaServe Wallet",
+                    description = "Welcome Sign-up Bonus Added to SaServe Wallet",
                     timestamp = "Today",
-                    upiRefId = "UPI/WEL/98234"
+                    upiRefId = "UPI/WEL/10001"
                 )
             )
             _walletTransactions.value = initialTx
-            saveWallet(500.0, initialTx)
+            saveWallet(100.0, initialTx)
         }
 
         // 7. Theme Mode (Default to Black & Light Theme)
@@ -875,6 +875,10 @@ class ServiceSyncRepository(private val context: Context) {
         saveProviders(updated)
     }
 
+    fun generate10DigitBookingId(): String {
+        return "10" + ((10000000..99999999).random()).toString()
+    }
+
     fun createBooking(
         provider: ServiceProvider,
         date: String,
@@ -887,7 +891,7 @@ class ServiceSyncRepository(private val context: Context) {
         val completionOtp = ((1000..9999).random()).toString()
 
         val booking = Booking(
-            id = "bk_" + UUID.randomUUID().toString().take(8),
+            id = generate10DigitBookingId(),
             customerId = user?.id ?: "cust_user",
             customerName = user?.name ?: "Customer User",
             customerPhone = user?.phone ?: "+91 98765 43210",
@@ -924,15 +928,16 @@ class ServiceSyncRepository(private val context: Context) {
     }
 
     /**
-     * Updates the current customer's profile info.
+     * Updates the current customer's profile info including optional profile picture.
      */
-    fun updateUserProfile(name: String, phone: String, email: String, address: String) {
+    fun updateUserProfile(name: String, phone: String, email: String, address: String, profileImageUri: String? = null) {
         val user = _currentUser.value ?: return
         val updated = user.copy(
             name = name.trim().ifBlank { user.name },
             phone = phone.trim().ifBlank { user.phone },
             email = email.trim(),
-            address = address.trim().ifBlank { user.address }
+            address = address.trim().ifBlank { user.address },
+            profileImageUri = profileImageUri ?: user.profileImageUri
         )
         _currentUser.value = updated
         saveUser(updated)
@@ -963,7 +968,7 @@ class ServiceSyncRepository(private val context: Context) {
 
         // 1. Initially broadcast request to all nearby available gigs (provider unassigned, pending acceptance)
         val initialBooking = Booking(
-            id = "bk_" + UUID.randomUUID().toString().take(8),
+            id = generate10DigitBookingId(),
             customerId = user?.id ?: "cust_user",
             customerName = user?.name ?: "Customer User",
             customerPhone = user?.phone ?: "+91 98765 43210",
@@ -1275,9 +1280,40 @@ class ServiceSyncRepository(private val context: Context) {
         saveNotifications(updated)
     }
 
+    fun markAllNotificationsAsRead() {
+        val updated = _notifications.value.map { it.copy(isRead = true) }
+        _notifications.value = updated
+        saveNotifications(updated)
+    }
+
     fun clearAllNotifications() {
         _notifications.value = emptyList()
         saveNotifications(emptyList())
+    }
+
+    fun addTipToBooking(bookingId: String, tip: Double): Boolean {
+        val currentList = _bookings.value
+        val targetIndex = currentList.indexOfFirst { it.id == bookingId }
+        if (targetIndex == -1) return false
+
+        val currentBooking = currentList[targetIndex]
+        val updatedBooking = currentBooking.copy(tipAmount = tip)
+        val updatedList = currentList.toMutableList().apply {
+            set(targetIndex, updatedBooking)
+        }
+        _bookings.value = updatedList
+        saveBookings(updatedList)
+
+        val tipNotif = AppNotification(
+            id = UUID.randomUUID().toString(),
+            title = "Tip Added! 💙",
+            message = "₹${tip.toInt()} tip added for ${currentBooking.providerName}. Thank you for appreciating their service!",
+            bookingId = currentBooking.id
+        )
+        _notifications.value = listOf(tipNotif) + _notifications.value
+        saveNotifications(_notifications.value)
+
+        return true
     }
 
     fun dismissBookingFromHome(bookingId: String) {

@@ -3,9 +3,12 @@ package com.servicesync.app.ui.screens.customer
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import com.servicesync.app.R
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -47,6 +50,7 @@ fun CustomerHomeScreen(
     onOpenFeedback: () -> Unit = {},
     onOpenAddresses: () -> Unit,
     onOpenSettings: () -> Unit = {},
+    onOpenProfile: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
     onBookingSelected: (Booking) -> Unit = {}
 ) {
@@ -65,7 +69,6 @@ fun CustomerHomeScreen(
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") }
-    var showProfileDialog by remember { mutableStateOf(false) }
 
     val unreadNotifCount = notifications.count { !it.isRead }
     val activeBookingsCount = bookings.count {
@@ -133,7 +136,12 @@ fun CustomerHomeScreen(
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable {
+                                        coroutineScope.launch { drawerState.close() }
+                                        onOpenProfile()
+                                    }
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -142,12 +150,23 @@ fun CustomerHomeScreen(
                                         .background(PrimaryBlue),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Person,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(28.dp)
-                                    )
+                                    if (!currentUser?.profileImageUri.isNullOrBlank()) {
+                                        androidx.compose.foundation.Image(
+                                            painter = androidx.compose.ui.res.painterResource(
+                                                id = getCustomerAvatarDrawable(currentUser?.profileImageUri)
+                                            ),
+                                            contentDescription = currentUser?.name,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                        )
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.Person,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
                                 }
 
                                 Column {
@@ -231,7 +250,7 @@ fun CustomerHomeScreen(
                     selected = false,
                     onClick = {
                         coroutineScope.launch { drawerState.close() }
-                        showProfileDialog = true
+                        onOpenProfile()
                     },
                     icon = { Icon(Icons.Default.AccountCircle, contentDescription = null, tint = PrimaryBlue) },
                     badge = {
@@ -377,18 +396,6 @@ fun CustomerHomeScreen(
                     icon = { Icon(Icons.Default.Settings, contentDescription = null, tint = PrimaryBlue) },
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
                 )
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp), color = CardBorder)
-
-                // Contact info footer preview
-                Column(
-                    modifier = Modifier
-                        .padding(horizontal = 18.dp, vertical = 4.dp)
-                ) {
-                    Text("Direct Support Line", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                    Text("📞 7488274632", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = TextPrimary)
-                    Text("✉️ sahaditya1804@gmail.com", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -582,8 +589,13 @@ fun CustomerHomeScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = primaryColor
                                 )
+                                val slotDisplay = if (ongoingHomeBooking.scheduledSlot.contains("Immediate", ignoreCase = true)) {
+                                    "Expected Arrival Time: 15–30 mins"
+                                } else {
+                                    ongoingHomeBooking.scheduledSlot
+                                }
                                 Text(
-                                    text = "${ongoingHomeBooking.scheduledDate} • ${ongoingHomeBooking.scheduledSlot}",
+                                    text = "${ongoingHomeBooking.scheduledDate} • $slotDisplay",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = TextPrimary
                                 )
@@ -633,8 +645,6 @@ fun CustomerHomeScreen(
                 }
             }
 
-
-
             // Promotional Highlights & Security Carousel
             item {
                 LazyRow(
@@ -681,10 +691,10 @@ fun CustomerHomeScreen(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Icon(Icons.Default.Bolt, null, tint = SecondaryTeal, modifier = Modifier.size(18.dp))
-                                    Text("Express Dispatch", color = SecondaryTeal, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Text("Expected Arrival Time: 15–30 mins", color = SecondaryTeal, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                 }
                                 Text("Specialists at Your Doorstep", color = TextPrimary, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
-                                Text("Quick response for electricians, plumbers, and home appliance repairs.", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
+                                Text("Expected arrival within 15–30 mins for electricians, plumbers, and home repairs.", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     }
@@ -711,6 +721,79 @@ fun CustomerHomeScreen(
                                 Text("Clear hourly pricing in Indian Rupees with 100% verified specialists.", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
                             }
                         }
+                    }
+                }
+            }
+
+            // 24x7 Customer Support & Service Pinned Banner (Top of all services)
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { onOpenHelp() },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = PrimaryBlue.copy(alpha = 0.12f)),
+                    border = BorderStroke(1.5.dp, PrimaryBlue.copy(alpha = 0.35f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .background(PrimaryBlue),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SupportAgent,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "24x7 Customer Service & Support",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = StatusAccepted
+                                ) {
+                                    Text(
+                                        text = "ACTIVE",
+                                        color = Color.White,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "Instant help with bookings, payments & specialists anytime",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                        }
+
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = PrimaryBlue
+                        )
                     }
                 }
             }
@@ -880,77 +963,7 @@ fun CustomerHomeScreen(
         }
     }
 
-    // Profile Edit Dialog
-    if (showProfileDialog) {
-        var editName by remember(currentUser) { mutableStateOf(currentUser?.name ?: "") }
-        var editPhone by remember(currentUser) { mutableStateOf(currentUser?.phone ?: "") }
-        var editEmail by remember(currentUser) { mutableStateOf(currentUser?.email ?: "") }
-        var editAddress by remember(currentUser) { mutableStateOf(currentUser?.address ?: "") }
 
-        AlertDialog(
-            onDismissRequest = { showProfileDialog = false },
-            title = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(Icons.Default.Person, contentDescription = null, tint = PrimaryBlue)
-                    Text("My Profile", fontWeight = FontWeight.Bold)
-                }
-            },
-            text = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    OutlinedTextField(
-                        value = editName,
-                        onValueChange = { editName = it },
-                        label = { Text("Full Name") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = editPhone,
-                        onValueChange = { editPhone = it },
-                        label = { Text("Mobile Number") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = editEmail,
-                        onValueChange = { editEmail = it },
-                        label = { Text("Email Address") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = editAddress,
-                        onValueChange = { editAddress = it },
-                        label = { Text("Service Address") },
-                        maxLines = 2,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        repository.updateUserProfile(editName, editPhone, editEmail, editAddress)
-                        showProfileDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                ) {
-                    Text("Save Changes", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showProfileDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
 
     }
 }
@@ -2447,6 +2460,9 @@ fun NotificationsScreen(
                 },
                 actions = {
                     if (notifications.isNotEmpty()) {
+                        TextButton(onClick = { repository.markAllNotificationsAsRead() }) {
+                            Text("Mark all as read")
+                        }
                         TextButton(onClick = { repository.clearAllNotifications() }) {
                             Text("Clear All")
                         }
@@ -4043,6 +4059,359 @@ fun HomeScreenCompletedRatingCard(
         }
     }
 }
+
+fun getCustomerAvatarDrawable(key: String?): Int {
+    return when (key) {
+        "avatar_1" -> R.drawable.avatar_user_1
+        "avatar_2" -> R.drawable.avatar_user_2
+        "avatar_3" -> R.drawable.avatar_user_3
+        "avatar_4" -> R.drawable.avatar_user_4
+        else -> R.drawable.avatar_user_1
+    }
+}
+
+/**
+ * Full Page Dedicated My Profile Screen with Avatar Chooser, Personal Info Editor, and Statistics
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MyProfileScreen(
+    repository: ServiceSyncRepository,
+    onBackClick: () -> Unit
+) {
+    val context = LocalContext.current
+    val currentUser by repository.currentUser.collectAsState()
+    val walletBalance by repository.walletBalance.collectAsState()
+    val bookings by repository.bookings.collectAsState()
+
+    var name by remember(currentUser) { mutableStateOf(currentUser?.name ?: "") }
+    var phone by remember(currentUser) { mutableStateOf(currentUser?.phone ?: "") }
+    var email by remember(currentUser) { mutableStateOf(currentUser?.email ?: "") }
+    var address by remember(currentUser) { mutableStateOf(currentUser?.address ?: "") }
+    var selectedAvatar by remember(currentUser) { mutableStateOf(currentUser?.profileImageUri ?: "avatar_1") }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            selectedAvatar = uri.toString()
+            Toast.makeText(context, "Photo selected! Don't forget to save.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val presetAvatars = listOf(
+        "avatar_1" to "Sapphire",
+        "avatar_2" to "Teal",
+        "avatar_3" to "Violet",
+        "avatar_4" to "Rose"
+    )
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("My Profile", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundLight)
+            )
+        },
+        containerColor = BackgroundLight
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // 1. Profile Picture & Avatar Selection Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                border = BorderStroke(1.dp, CardBorder),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // Profile Photo Box with Edit Badge
+                    Box(
+                        contentAlignment = Alignment.BottomEnd
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(CircleShape)
+                                .border(3.dp, PrimaryBlue, CircleShape)
+                                .background(SurfaceVariantLight),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (selectedAvatar.startsWith("content://") || selectedAvatar.startsWith("file://")) {
+                                // Loaded custom URI
+                                androidx.compose.foundation.Image(
+                                    painter = androidx.compose.ui.res.painterResource(id = R.drawable.avatar_user_1),
+                                    contentDescription = "Profile Photo",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                            } else {
+                                androidx.compose.foundation.Image(
+                                    painter = androidx.compose.ui.res.painterResource(id = getCustomerAvatarDrawable(selectedAvatar)),
+                                    contentDescription = "Profile Photo",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                            }
+                        }
+
+                        // Camera / Upload badge button
+                        FloatingActionButton(
+                            onClick = { photoPickerLauncher.launch("image/*") },
+                            modifier = Modifier.size(34.dp),
+                            shape = CircleShape,
+                            containerColor = PrimaryBlue,
+                            contentColor = Color.White
+                        ) {
+                            Icon(Icons.Default.CameraAlt, contentDescription = "Change photo", modifier = Modifier.size(18.dp))
+                        }
+                    }
+
+                    Text(
+                        text = name.ifBlank { "SaServe Customer" },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+
+                    Divider(color = CardBorder, thickness = 0.8.dp)
+
+                    // Choose Preset Avatar
+                    Text(
+                        text = "Or Choose an Avatar Preset",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextSecondary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        presetAvatars.forEach { (avatarKey, label) ->
+                            val isSelected = selectedAvatar == avatarKey
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { selectedAvatar = avatarKey }
+                                    .padding(4.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(CircleShape)
+                                        .border(
+                                            width = if (isSelected) 2.5.dp else 1.dp,
+                                            color = if (isSelected) PrimaryBlue else CardBorder,
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    androidx.compose.foundation.Image(
+                                        painter = androidx.compose.ui.res.painterResource(id = getCustomerAvatarDrawable(avatarKey)),
+                                        contentDescription = label,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                    )
+                                }
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) PrimaryBlue else TextSecondary
+                                )
+                            }
+                        }
+
+                        // Upload from gallery chip
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { photoPickerLauncher.launch("image/*") }
+                                .padding(4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(CircleShape)
+                                    .background(PrimaryBlue.copy(alpha = 0.1f))
+                                    .border(1.dp, PrimaryBlue.copy(alpha = 0.4f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Upload", tint = PrimaryBlue, modifier = Modifier.size(22.dp))
+                            }
+                            Text(
+                                text = "Gallery",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 11.sp,
+                                color = PrimaryBlue,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 2. Account Overview Badges Card
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = SurfaceLight,
+                border = BorderStroke(1.dp, CardBorder),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Wallet Balance", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text("₹${walletBalance.toInt()}", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, color = PrimaryBlue)
+                    }
+
+                    VerticalDivider(modifier = Modifier.height(32.dp), color = CardBorder)
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Total Bookings", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text("${bookings.size}", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, color = TextPrimary)
+                    }
+
+                    VerticalDivider(modifier = Modifier.height(32.dp), color = CardBorder)
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Account", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text("VERIFIED", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = StatusAccepted)
+                    }
+                }
+            }
+
+            // 3. Editable Personal Information Form
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                border = BorderStroke(1.dp, CardBorder),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                        Text(
+                            text = "Edit Personal Information",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Full Name *") },
+                        leadingIcon = { Icon(Icons.Default.Person, null, tint = PrimaryBlue) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = phone,
+                        onValueChange = { phone = it },
+                        label = { Text("Mobile Number *") },
+                        leadingIcon = { Icon(Icons.Default.Phone, null, tint = PrimaryBlue) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Email Address") },
+                        leadingIcon = { Icon(Icons.Default.Email, null, tint = PrimaryBlue) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = address,
+                        onValueChange = { address = it },
+                        label = { Text("Home / Service Address") },
+                        leadingIcon = { Icon(Icons.Default.LocationOn, null, tint = PrimaryBlue) },
+                        minLines = 2,
+                        maxLines = 3,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            // 4. Save Profile Changes Action Button
+            Button(
+                onClick = {
+                    if (name.isBlank()) {
+                        Toast.makeText(context, "Please enter your name", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    repository.updateUserProfile(
+                        name = name.trim(),
+                        phone = phone.trim(),
+                        email = email.trim(),
+                        address = address.trim(),
+                        profileImageUri = selectedAvatar
+                    )
+                    Toast.makeText(context, "Profile changes saved successfully! ✅", Toast.LENGTH_SHORT).show()
+                    onBackClick()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+            ) {
+                Icon(Icons.Default.Save, contentDescription = null, tint = Color.White)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Save Profile Changes",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
 
 
 

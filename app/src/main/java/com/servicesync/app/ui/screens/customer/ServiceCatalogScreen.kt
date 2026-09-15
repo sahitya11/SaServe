@@ -83,7 +83,7 @@ fun ServiceCatalogScreen(
                             color = TextPrimary
                         )
                         Text(
-                            text = "SaServe Assured Warranty • Verified Experts",
+                            text = "Verified Background-Checked Experts",
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary
                         )
@@ -221,7 +221,7 @@ fun ServiceCatalogScreen(
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Icon(Icons.Default.Shield, null, tint = PrimaryBlue, modifier = Modifier.size(14.dp))
-                                    Text("30-Day Warranty", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondary)
+                                    Text("Assuring Excellence", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondary)
                                 }
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Icon(Icons.Default.Verified, null, tint = SecondaryTeal, modifier = Modifier.size(14.dp))
@@ -455,7 +455,7 @@ fun ServiceCatalogScreen(
                             color = TextPrimary
                         )
                         val slots = listOf(
-                            "Immediate (in 30 mins) ⚡",
+                            "Immediate (Expected: 15–30 mins) ⚡",
                             "10:00 AM - 12:00 PM",
                             "02:00 PM - 04:00 PM",
                             "05:00 PM - 07:00 PM",
@@ -488,24 +488,27 @@ fun ServiceCatalogScreen(
                             }
                         }
 
-                        // Location
+                        // Location (Mandatory)
                         OutlinedTextField(
                             value = serviceAddress,
                             onValueChange = { serviceAddress = it },
-                            label = { Text("Service Location") },
+                            label = { Text("Service Location * (Required)") },
+                            placeholder = { Text("Flat/House No., Street, Landmark (Mandatory)") },
                             leadingIcon = { Icon(Icons.Default.LocationOn, null, tint = PrimaryBlue) },
                             maxLines = 2,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            isError = serviceAddress.isBlank()
                         )
 
-                        // Notes
+                        // Issue Description Notes (Mandatory)
                         OutlinedTextField(
                             value = issueNotes,
                             onValueChange = { issueNotes = it },
-                            label = { Text("Problem Details / Instructions (Optional)") },
-                            placeholder = { Text("e.g. Needs immediate check, spare parts on site") },
-                            maxLines = 2,
-                            modifier = Modifier.fillMaxWidth()
+                            label = { Text("Problem Details / Issue Description * (Required)") },
+                            placeholder = { Text("Describe the issue clearly (Mandatory)") },
+                            maxLines = 3,
+                            modifier = Modifier.fillMaxWidth(),
+                            isError = issueNotes.isBlank()
                         )
 
                         // Previous Cancellation Penalty Alert (if applicable)
@@ -555,27 +558,6 @@ fun ServiceCatalogScreen(
                                 }
                             }
                         }
-
-                        // Security Reassurance
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = SurfaceVariantLight,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(Icons.Default.Shield, null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
-                                Text(
-                                    text = "⚡ Price Lock • 2-OTP Verified Security • 30-Day Guarantee",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = TextSecondary,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
                     }
                 }
             },
@@ -593,22 +575,24 @@ fun ServiceCatalogScreen(
                         Text("Track Live Service 🚀", color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 } else if (!isSearchingSpecialist) {
+                    val isFormValid = selectedSlot.isNotBlank() && serviceAddress.trim().isNotBlank() && issueNotes.trim().isNotBlank()
                     Button(
                         onClick = {
                             isSearchingSpecialist = true
                             coroutineScope.launch {
-                                val fullDesc = "${currentItem.name}${if (issueNotes.isNotBlank()) " - $issueNotes" else ""}"
+                                val fullDesc = "${currentItem.name} - ${issueNotes.trim()}"
                                 val booked = repository.broadcastServiceDispatch(
                                     category = selectedCategory,
                                     date = selectedDate,
                                     timeSlot = selectedSlot,
-                                    address = serviceAddress,
+                                    address = serviceAddress.trim(),
                                     issueDescription = fullDesc
                                 )
                                 isSearchingSpecialist = false
                                 assignedBooking = booked
                             }
                         },
+                        enabled = isFormValid,
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                     ) {
                         val ctaLabel = if (pendingCancellationFee > 0.0) {
@@ -1085,12 +1069,17 @@ fun AssignedSpecialistCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(50.dp)
+                        .size(52.dp)
                         .clip(CircleShape)
-                        .background(PrimaryBlue),
+                        .border(1.5.dp, PrimaryBlue, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(30.dp))
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = com.servicesync.app.ui.components.getSpecialistAvatarDrawable(booking.category)),
+                        contentDescription = booking.providerName,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
