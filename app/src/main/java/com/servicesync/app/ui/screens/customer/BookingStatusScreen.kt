@@ -152,7 +152,7 @@ fun BookingStatusScreen(
 
                     Text(
                         text = when (booking.status) {
-                            BookingStatus.PENDING -> "Request Sent to Specialist"
+                            BookingStatus.PENDING -> if (booking.providerId.isBlank() || booking.providerName.contains("Searching", ignoreCase = true)) "Broadcasting to Nearby Specialists 📡" else "Request Sent to Specialist"
                             BookingStatus.ACCEPTED -> "🎉 Booking Confirmed & Scheduled!"
                             BookingStatus.IN_PROGRESS -> "Service In Progress"
                             BookingStatus.COMPLETED -> "Service Completed Successfully"
@@ -172,7 +172,11 @@ fun BookingStatusScreen(
 
                     Text(
                         text = when (booking.status) {
-                            BookingStatus.PENDING -> "Waiting for ${booking.providerName} to accept your request. You will receive an instant notification once confirmed."
+                            BookingStatus.PENDING -> if (booking.providerId.isBlank() || booking.providerName.contains("Searching", ignoreCase = true)) {
+                                "Broadcasting your service request to all nearby verified ${booking.category.displayName} specialists. Whoever accepts the service first will be assigned and shown here immediately."
+                            } else {
+                                "Waiting for ${booking.providerName} to accept your request. You will receive an instant notification once confirmed."
+                            }
                             BookingStatus.ACCEPTED -> "${booking.providerName} has accepted your booking for ${booking.scheduledDate} at ${booking.scheduledSlot}."
                             BookingStatus.IN_PROGRESS -> "The specialist has started your service. Share the Completion OTP when work finishes."
                             BookingStatus.COMPLETED -> "Thank you! The job was completed and closed with the verified OTP."
@@ -228,13 +232,16 @@ fun BookingStatusScreen(
                                 )
                                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     Text(
-                                        text = "Awaiting Specialist Acceptance",
+                                        text = if (booking.providerId.isBlank() || booking.providerName.contains("Searching", ignoreCase = true)) "Broadcasting to Nearby Specialists" else "Awaiting Specialist Acceptance",
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = StatusPending
                                     )
                                     Text(
-                                        text = "Your Start and Completion OTPs will unlock immediately once ${booking.providerName} accepts your booking.",
+                                        text = if (booking.providerId.isBlank() || booking.providerName.contains("Searching", ignoreCase = true))
+                                            "Your Start and Completion OTPs will unlock immediately once a nearby specialist accepts your booking."
+                                        else
+                                            "Your Start and Completion OTPs will unlock immediately once ${booking.providerName} accepts your booking.",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = TextSecondary
                                     )
@@ -631,54 +638,92 @@ fun BookingStatusScreen(
                     modifier = Modifier.padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text(
-                        text = "Assigned Specialist",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (booking.status == BookingStatus.PENDING && (booking.providerId.isBlank() || booking.providerName.contains("Searching", ignoreCase = true))) {
+                        Text(
+                            text = "Broadcast Status",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(52.dp)
-                                .clip(CircleShape)
-                                .background(PrimaryBlue),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text(
-                                text = booking.providerName.split(" ").mapNotNull { it.firstOrNull()?.toString() }.joinToString(""),
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp
-                            )
-                        }
-
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            Box(
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .clip(CircleShape)
+                                    .background(StatusPending.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
                             ) {
+                                Icon(Icons.Default.NearMe, null, tint = StatusPending, modifier = Modifier.size(28.dp))
+                            }
+
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text(
-                                    text = booking.providerName,
+                                    text = "Broadcasting to Nearby Specialists 📡",
                                     style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = "Request sent to all nearby verified ${booking.category.displayName} specialists. Whoever accepts the service first will be displayed here.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = "Assigned Specialist",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .clip(CircleShape)
+                                    .background(PrimaryBlue),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                val initials = booking.providerName.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString("").ifBlank { "SP" }
+                                Text(
+                                    text = initials,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                )
+                            }
+
+                            Column {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = booking.providerName,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Icon(Icons.Default.Verified, null, tint = AccentSky, modifier = Modifier.size(16.dp))
+                                }
+                                Text(
+                                    text = "${booking.category.displayName} • ${booking.providerPhone}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextSecondary
+                                )
+                                Text(
+                                    text = "Rate: ₹${booking.hourlyRate.toInt()}/hr",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = PrimaryBlue,
                                     fontWeight = FontWeight.Bold
                                 )
-                                Icon(Icons.Default.Verified, null, tint = AccentSky, modifier = Modifier.size(16.dp))
                             }
-                            Text(
-                                text = "${booking.category.displayName} • ${booking.providerPhone}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
-                            )
-                            Text(
-                                text = "Rate: ₹${booking.hourlyRate.toInt()}/hr",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = PrimaryBlue,
-                                fontWeight = FontWeight.Bold
-                            )
                         }
                     }
                 }

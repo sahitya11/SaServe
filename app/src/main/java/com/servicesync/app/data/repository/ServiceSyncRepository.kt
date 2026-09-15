@@ -956,74 +956,111 @@ class ServiceSyncRepository(private val context: Context) {
         val startOtp = ((1000..9999).random()).toString()
         val completionOtp = ((1000..9999).random()).toString()
 
-        // Match existing provider or dynamically assign certified specialist
-        val matchedProvider = _providers.value.firstOrNull { it.category == category && it.isAvailable }
-            ?: run {
-                val mockName = when (category) {
-                    ServiceCategory.ELECTRICIAN -> "Ramesh Verma"
-                    ServiceCategory.PLUMBER -> "Sunil Kumar"
-                    ServiceCategory.CARPENTER -> "Mohan Lal"
-                    ServiceCategory.MECHANIC -> "Vikram Singh"
-                    ServiceCategory.APPLIANCE_REPAIR -> "Amit Saini"
-                    ServiceCategory.PAINTER -> "Rajesh Patel"
-                    ServiceCategory.MASON -> "Harish Rawat"
-                    ServiceCategory.GARDENER -> "Manoj Saini"
-                    ServiceCategory.HOUSE_CLEANING -> "Pooja Sharma"
-                    ServiceCategory.OTHER -> "Sunil Sharma"
-                }
-                addServiceProvider(
-                    name = mockName,
-                    phone = "+91 98${(10000000..99999999).random()}",
-                    email = "${mockName.lowercase().replace(" ", "")}@saserve.com",
-                    category = category,
-                    hourlyRate = 399.0,
-                    experienceYears = 6,
-                    bio = "Certified SaServe ${category.displayName} specialist. Equipped with verified tools.",
-                    location = "Nearby Specialist (1.2 km away)",
-                    rating = 4.9f
-                )
-            }
-
         val appliedCancellationFee = _pendingCancellationFee.value
         if (appliedCancellationFee > 0.0) {
             savePendingCancellationFee(0.0)
         }
 
-        val booking = Booking(
+        // 1. Initially broadcast request to all nearby available gigs (provider unassigned, pending acceptance)
+        val initialBooking = Booking(
             id = "bk_" + UUID.randomUUID().toString().take(8),
             customerId = user?.id ?: "cust_user",
             customerName = user?.name ?: "Customer User",
             customerPhone = user?.phone ?: "+91 98765 43210",
             customerAddress = if (address.isNotBlank()) address else (user?.address ?: "Current Location"),
-            providerId = matchedProvider.id,
-            providerName = matchedProvider.name,
-            providerPhone = matchedProvider.phone,
+            providerId = "",
+            providerName = "Searching Nearby Specialists...",
+            providerPhone = "",
             category = category,
             scheduledDate = date,
             scheduledSlot = timeSlot,
             issueDescription = if (issueDescription.isNotBlank()) issueDescription else "On-demand ${category.displayName} service",
             status = BookingStatus.PENDING,
-            hourlyRate = matchedProvider.hourlyRate,
+            hourlyRate = 399.0,
             startOtp = startOtp,
             completionOtp = completionOtp,
             cancellationFee = appliedCancellationFee
         )
 
-        val updatedBookings = listOf(booking) + _bookings.value
+        val updatedBookings = listOf(initialBooking) + _bookings.value
         _bookings.value = updatedBookings
         saveBookings(updatedBookings)
 
-        // Notification: Broadcast initiated
+        // Notification: Broadcast sent to nearby specialists
         val newNotif = AppNotification(
             id = UUID.randomUUID().toString(),
             title = "Searching Nearby Specialists 📡",
-            message = "Broadcasting your ${category.displayName} request to nearby specialists...",
-            bookingId = booking.id
+            message = "Broadcasting your ${category.displayName} request to all nearby available specialists...",
+            bookingId = initialBooking.id
         )
         _notifications.value = listOf(newNotif) + _notifications.value
         saveNotifications(_notifications.value)
 
-        return booking
+        // 2. Real-time broadcast dispatch delay (scanning radar in dialog runs while request is sent out to all nearby available gigs)
+        kotlinx.coroutines.delay(2600)
+
+        // 3. Out of all nearby available gigs for this category, whoever accepts the service is selected
+        val availableProviders = _providers.value.filter { it.category == category && it.isAvailable }
+        val acceptedProvider = if (availableProviders.isNotEmpty()) {
+            availableProviders.random()
+        } else {
+            val mockName = when (category) {
+                ServiceCategory.ELECTRICIAN -> "Ramesh Verma"
+                ServiceCategory.PLUMBER -> "Sunil Kumar"
+                ServiceCategory.CARPENTER -> "Mohan Lal"
+                ServiceCategory.MECHANIC -> "Vikram Singh"
+                ServiceCategory.APPLIANCE_REPAIR -> "Amit Saini"
+                ServiceCategory.PAINTER -> "Rajesh Patel"
+                ServiceCategory.MASON -> "Harish Rawat"
+                ServiceCategory.GARDENER -> "Manoj Saini"
+                ServiceCategory.HOUSE_CLEANING -> "Pooja Sharma"
+                ServiceCategory.OTHER -> "Sunil Sharma"
+            }
+            addServiceProvider(
+                name = mockName,
+                phone = "+91 98${(10000000..99999999).random()}",
+                email = "${mockName.lowercase().replace(" ", "")}@saserve.com",
+                category = category,
+                hourlyRate = 399.0,
+                experienceYears = 6,
+                bio = "Certified SaServe ${category.displayName} specialist. Equipped with verified tools.",
+                location = "Nearby Specialist (1.2 km away)",
+                rating = 4.9f
+            )
+        }
+
+        // 4. Update the booking with the specialist who accepted the service request
+        val acceptedBooking = initialBooking.copy(
+            providerId = acceptedProvider.id,
+            providerName = acceptedProvider.name,
+            providerPhone = acceptedProvider.phone,
+            hourlyRate = acceptedProvider.hourlyRate,
+            status = BookingStatus.ACCEPTED
+        )
+
+        val finalList = _bookings.value.toMutableList()
+        val index = finalList.indexOfFirst { it.id == initialBooking.id }
+        if (index != -1) {
+            finalList[index] = acceptedBooking
+        } else {
+            finalList.add(0, acceptedBooking)
+        }
+        _bookings.value = finalList
+        saveBookings(finalList)
+
+        // 5. Trigger customer notifications for acceptance
+        NotificationHelper.sendBookingAcceptedNotification(context, acceptedBooking)
+
+        val acceptanceNotif = AppNotification(
+            id = UUID.randomUUID().toString(),
+            title = "🎉 Booking Accepted by ${acceptedBooking.providerName}!",
+            message = "${acceptedBooking.providerName} (${acceptedBooking.category.displayName}) has accepted your service request for ${acceptedBooking.scheduledDate} at ${acceptedBooking.scheduledSlot}.",
+            bookingId = acceptedBooking.id
+        )
+        _notifications.value = listOf(acceptanceNotif) + _notifications.value
+        saveNotifications(_notifications.value)
+
+        return acceptedBooking
     }
 
     /**
@@ -1036,7 +1073,20 @@ class ServiceSyncRepository(private val context: Context) {
         if (targetIndex == -1) return false
 
         val currentBooking = currentList[targetIndex]
-        val updatedBooking = currentBooking.copy(status = BookingStatus.ACCEPTED)
+        val assignedProvider = if (currentBooking.providerId.isNotBlank()) {
+            _providers.value.firstOrNull { it.id == currentBooking.providerId }
+        } else {
+            _providers.value.firstOrNull { it.category == currentBooking.category && it.isAvailable }
+                ?: _providers.value.firstOrNull { it.category == currentBooking.category }
+        }
+
+        val updatedBooking = currentBooking.copy(
+            status = BookingStatus.ACCEPTED,
+            providerId = assignedProvider?.id ?: currentBooking.providerId,
+            providerName = assignedProvider?.name ?: currentBooking.providerName,
+            providerPhone = assignedProvider?.phone ?: currentBooking.providerPhone,
+            hourlyRate = assignedProvider?.hourlyRate ?: currentBooking.hourlyRate
+        )
         val updatedList = currentList.toMutableList().apply {
             set(targetIndex, updatedBooking)
         }
