@@ -41,10 +41,6 @@ fun BookingStatusScreen(
     // Observe live booking updates so status changes dynamically
     val booking = bookings.firstOrNull { it.id == initialBooking.id } ?: initialBooking
 
-    var otpInput by remember { mutableStateOf("") }
-    var otpError by remember { mutableStateOf<String?>(null) }
-    var showOtpDialogFor by remember { mutableStateOf<String?>(null) } // "START" or "COMPLETION"
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -186,20 +182,6 @@ fun BookingStatusScreen(
                         textAlign = TextAlign.Center,
                         color = TextPrimary
                     )
-
-                    // SaServe Live Acceptance Trigger for Testing
-                    if (booking.status == BookingStatus.PENDING) {
-                        Button(
-                            onClick = { repository.acceptBooking(booking.id) },
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = StatusAccepted),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
-                            Icon(Icons.Default.NotificationsActive, null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Simulate Provider Acceptance", fontWeight = FontWeight.Bold)
-                        }
-                    }
                 }
             }
 
@@ -348,22 +330,6 @@ fun BookingStatusScreen(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = if (booking.status == BookingStatus.IN_PROGRESS || booking.status == BookingStatus.COMPLETED) StatusCompleted else TextSecondary
                                 )
-
-                                if (booking.status == BookingStatus.ACCEPTED) {
-                                    OutlinedButton(
-                                        onClick = {
-                                            showOtpDialogFor = "START"
-                                            otpInput = booking.startOtp
-                                            otpError = null
-                                        },
-                                        shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Icon(Icons.Default.VpnKey, null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Enter Start OTP (Begin Service)")
-                                    }
-                                }
                             }
                         }
 
@@ -458,23 +424,6 @@ fun BookingStatusScreen(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = if (booking.status == BookingStatus.COMPLETED) StatusCompleted else TextSecondary
                                     )
-
-                                    if (booking.status == BookingStatus.IN_PROGRESS) {
-                                        Button(
-                                            onClick = {
-                                                showOtpDialogFor = "COMPLETION"
-                                                otpInput = booking.completionOtp
-                                                otpError = null
-                                            },
-                                            shape = RoundedCornerShape(8.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = StatusCompleted),
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(16.dp))
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text("Enter Completion OTP (Finish Job)", fontWeight = FontWeight.Bold)
-                                        }
-                                    }
                                 }
                             }
                         }
@@ -783,66 +732,5 @@ fun BookingStatusScreen(
             Spacer(modifier = Modifier.height(30.dp))
         }
     }
-
-    // OTP Verification Modal
-    if (showOtpDialogFor != null) {
-        val isStart = showOtpDialogFor == "START"
-        AlertDialog(
-            onDismissRequest = { showOtpDialogFor = null },
-            title = {
-                Text(if (isStart) "Verify Start Service OTP" else "Verify Completion OTP")
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        if (isStart) "Enter the 4-digit code provided to start the work."
-                        else "Enter the 4-digit code provided to finish the work."
-                    )
-                    OutlinedTextField(
-                        value = otpInput,
-                        onValueChange = { otpInput = it },
-                        label = { Text("4-Digit OTP") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    if (otpError != null) {
-                        Text(otpError ?: "", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val expectedOtp = if (isStart) booking.startOtp else booking.completionOtp
-                        if (otpInput.trim() == expectedOtp) {
-                            if (isStart) {
-                                val success = repository.startBookingWithOtp(booking.id, otpInput.trim())
-                                if (success) {
-                                    showOtpDialogFor = null
-                                } else {
-                                    otpError = "Failed to start service."
-                                }
-                            } else {
-                                val success = repository.completeBookingWithOtp(booking.id, otpInput.trim())
-                                if (success) {
-                                    showOtpDialogFor = null
-                                } else {
-                                    otpError = "Failed to complete service."
-                                }
-                            }
-                        } else {
-                            otpError = "Incorrect OTP code. Expected: $expectedOtp"
-                        }
-                    }
-                ) {
-                    Text("Confirm OTP")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showOtpDialogFor = null }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
 }
+

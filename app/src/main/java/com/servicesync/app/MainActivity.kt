@@ -103,9 +103,6 @@ fun MainAppHost(initialNavTarget: String?, repository: ServiceSyncRepository) {
         }
     }
 
-    var showAddProviderDialog by remember { mutableStateOf(false) }
-    var addProviderCategory by remember { mutableStateOf<ServiceCategory?>(null) }
-
     // Request notification permission for Android 13+ (Tiramisu)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         val permissionLauncher = rememberLauncherForActivityResult(
@@ -121,22 +118,6 @@ fun MainAppHost(initialNavTarget: String?, repository: ServiceSyncRepository) {
                 permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-    }
-
-    // Add Provider Dialog
-    if (showAddProviderDialog) {
-        AddProviderDialog(
-            repository = repository,
-            initialCategory = addProviderCategory,
-            onDismiss = {
-                showAddProviderDialog = false
-                addProviderCategory = null
-            },
-            onProviderAdded = {
-                showAddProviderDialog = false
-                addProviderCategory = null
-            }
-        )
     }
 
     val unreadNotifs = notifications.count { !it.isRead }
@@ -211,10 +192,6 @@ fun MainAppHost(initialNavTarget: String?, repository: ServiceSyncRepository) {
                         onOpenSettings = {
                             currentScreen = Screen.Settings
                         },
-                        onAddProviderClick = {
-                            addProviderCategory = null
-                            showAddProviderDialog = true
-                        },
                         onLogoutClick = {
                             repository.logoutCustomer()
                             currentScreen = Screen.Auth
@@ -247,10 +224,6 @@ fun MainAppHost(initialNavTarget: String?, repository: ServiceSyncRepository) {
                         },
                         onBookProvider = { provider ->
                             currentScreen = Screen.ProviderDetail(provider)
-                        },
-                        onAddProviderClick = { cat ->
-                            addProviderCategory = cat
-                            showAddProviderDialog = true
                         }
                     )
                 }

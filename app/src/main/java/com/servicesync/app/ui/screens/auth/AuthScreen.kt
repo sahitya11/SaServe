@@ -21,10 +21,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.servicesync.app.R
 import com.servicesync.app.data.repository.ServiceSyncRepository
+import com.servicesync.app.notification.NotificationHelper
 import com.servicesync.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,6 +37,7 @@ fun AuthScreen(
     onRegisteredNeedAddress: () -> Unit
 ) {
     var isRegisterMode by remember { mutableStateOf(true) } // Default to Register for first-time user
+    val context = LocalContext.current
 
     var nameInput by remember { mutableStateOf("") }
     var phoneInput by remember { mutableStateOf("") }
@@ -285,10 +288,9 @@ fun AuthScreen(
                                     )
                                 }
                                 Text(
-                                    text = "For verification, enter demo code: $generatedOtp",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = PrimaryBlue
+                                    text = "Please enter the 4-digit verification code sent to your mobile number.",
+                                    fontSize = 12.sp,
+                                    color = TextSecondary
                                 )
                             }
                         }
@@ -322,8 +324,10 @@ fun AuthScreen(
                             )
                             TextButton(
                                 onClick = {
-                                    generatedOtp = (1000..9999).random().toString()
+                                    val newOtp = (1000..9999).random().toString()
+                                    generatedOtp = newOtp
                                     errorMessage = null
+                                    NotificationHelper.sendOtpSmsNotification(context, newOtp)
                                 }
                             ) {
                                 Text("Resend OTP", color = PrimaryBlue, fontWeight = FontWeight.Bold, fontSize = 13.sp)
@@ -348,15 +352,17 @@ fun AuthScreen(
 
                             // Step 1: Send OTP
                             if (!isOtpSent) {
-                                generatedOtp = (1000..9999).random().toString()
+                                val newOtp = (1000..9999).random().toString()
+                                generatedOtp = newOtp
                                 isOtpSent = true
                                 errorMessage = null
+                                NotificationHelper.sendOtpSmsNotification(context, newOtp)
                                 return@Button
                             }
 
                             // Step 2: Verify OTP
                             if (otpInput.trim() != generatedOtp && otpInput.trim() != "1234") {
-                                errorMessage = "Invalid OTP code. Please enter the 4-digit code shown above."
+                                errorMessage = "Invalid OTP code. Please check the 4-digit code and try again."
                                 return@Button
                             }
 

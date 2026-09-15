@@ -135,4 +135,28 @@ object NotificationHelper {
             e.printStackTrace()
         }
     }
+
+    fun sendOtpSmsNotification(context: Context, otp: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val hasPermission = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!hasPermission) return
+        }
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID_BOOKINGS)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("SaServe Security")
+            .setContentText("Your verification code is $otp. Do not share this code with anyone.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+
+        try {
+            NotificationManagerCompat.from(context).notify(9999, notification)
+        } catch (e: SecurityException) {
+            e.printStackTrace()
+        }
+    }
 }

@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
 import com.servicesync.app.data.model.*
 import kotlinx.coroutines.tasks.await
@@ -71,6 +72,20 @@ class FirebaseSyncService(
         }
     }
 
+    fun listenToProviders(onUpdate: (List<ServiceProvider>) -> Unit): ListenerRegistration {
+        return firestore.collection(COLLECTION_PROVIDERS)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e(TAG, "Error listening to providers", error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val providers = snapshot.documents.mapNotNull { doc -> documentToProvider(doc) }
+                    onUpdate(providers)
+                }
+            }
+    }
+
     // ----------------------------------------------------------------
     // BOOKINGS SYNC
     // ----------------------------------------------------------------
@@ -115,6 +130,20 @@ class FirebaseSyncService(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    fun listenToBookings(onUpdate: (List<Booking>) -> Unit): ListenerRegistration {
+        return firestore.collection(COLLECTION_BOOKINGS)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e(TAG, "Error listening to bookings", error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val bookings = snapshot.documents.mapNotNull { doc -> documentToBooking(doc) }
+                    onUpdate(bookings)
+                }
+            }
     }
 
     // ----------------------------------------------------------------

@@ -47,7 +47,6 @@ fun CustomerHomeScreen(
     onOpenFeedback: () -> Unit = {},
     onOpenAddresses: () -> Unit,
     onOpenSettings: () -> Unit = {},
-    onAddProviderClick: () -> Unit,
     onLogoutClick: () -> Unit = {},
     onBookingSelected: (Booking) -> Unit = {}
 ) {
@@ -1298,8 +1297,7 @@ fun ProviderListScreen(
     repository: ServiceSyncRepository,
     onBackClick: () -> Unit,
     onProviderSelected: (ServiceProvider) -> Unit,
-    onBookProvider: (ServiceProvider) -> Unit,
-    onAddProviderClick: (ServiceCategory) -> Unit
+    onBookProvider: (ServiceProvider) -> Unit
 ) {
     val providers by repository.providers.collectAsState()
     var sortBy by remember { mutableStateOf("Rating") }
@@ -1334,21 +1332,6 @@ fun ProviderListScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    FilledTonalButton(
-                        onClick = { onAddProviderClick(category) },
-                        shape = RoundedCornerShape(20.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = StatusAcceptedBg,
-                            contentColor = PrimaryBlue
-                        )
-                    ) {
-                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Add", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundLight)
@@ -1434,25 +1417,16 @@ fun ProviderListScreen(
                                 )
                             }
                             Text(
-                                text = "No ${category.displayName}s Added Yet",
+                                text = "No ${category.displayName}s Available",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "You haven't added any specialists for this service. Tap below to register one.",
+                                text = "There are currently no specialists available for this service in your area. Please check back shortly!",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextSecondary,
                                 textAlign = TextAlign.Center
                             )
-                            Button(
-                                onClick = { onAddProviderClick(category) },
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                            ) {
-                                Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Add ${category.displayName}")
-                            }
                         }
                     }
                 }

@@ -2,6 +2,7 @@ package com.servicesync.app.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.servicesync.app.data.firebase.FirebaseAuthService
@@ -66,8 +67,12 @@ class ServiceSyncRepository(private val context: Context) {
     private val _feedbackList = MutableStateFlow<List<AppFeedback>>(emptyList())
     val feedbackList: StateFlow<List<AppFeedback>> = _feedbackList.asStateFlow()
 
+    private var bookingsListener: ListenerRegistration? = null
+    private var providersListener: ListenerRegistration? = null
+
     init {
         loadOrInitializeData()
+        startFirestoreRealtimeSync()
         repositoryScope.launch {
             try {
                 // Upload all previous data (providers, bookings, feedback, users) to Cloud Firestore
@@ -87,6 +92,99 @@ class ServiceSyncRepository(private val context: Context) {
             } catch (e: Exception) {
                 // Background sync gracefully non-blocking
             }
+        }
+    }
+
+    private fun startFirestoreRealtimeSync() {
+        try {
+            bookingsListener?.remove()
+            bookingsListener = firebaseSyncService.listenToBookings { remoteBookings ->
+                if (remoteBookings.isNotEmpty()) {
+                    val currentList = _bookings.value
+                    val currentMap = currentList.associateBy { it.id }
+                    val remoteMap = remoteBookings.associateBy { it.id }
+
+                    // Check for status changes from Partner app to trigger notifications
+                    for (remote in remoteBookings) {
+                        val local = currentMap[remote.id]
+                        if (local != null && local.status != remote.status) {
+                            when (remote.status) {
+                                BookingStatus.ACCEPTED -> {
+                                    NotificationHelper.sendBookingAcceptedNotification(context, remote)
+                                    val acceptanceNotif = AppNotification(
+                                        id = UUID.randomUUID().toString(),
+                                        title = "🎉 Booking Accepted by ${remote.providerName}!",
+                                        message = "${remote.providerName} (${remote.category.displayName}) has confirmed your appointment for ${remote.scheduledDate} at ${remote.scheduledSlot}.",
+                                        bookingId = remote.id
+                                    )
+                                    _notifications.value = listOf(acceptanceNotif) + _notifications.value
+                                    saveNotifications(_notifications.value)
+                                }
+                                BookingStatus.IN_PROGRESS -> {
+                                    val notif = AppNotification(
+                                        id = UUID.randomUUID().toString(),
+                                        title = "Service Started 🛠️",
+                                        message = "${remote.providerName} has verified your Start OTP and begun the service.",
+                                        bookingId = remote.id
+                                    )
+                                    _notifications.value = listOf(notif) + _notifications.value
+                                    saveNotifications(_notifications.value)
+                                }
+                                BookingStatus.COMPLETED -> {
+                                    val notif = AppNotification(
+                                        id = UUID.randomUUID().toString(),
+                                        title = "Service Completed! ✨",
+                                        message = "Your service with ${remote.providerName} is complete! How was your experience?",
+                                        bookingId = remote.id
+                                    )
+                                    _notifications.value = listOf(notif) + _notifications.value
+                                    saveNotifications(_notifications.value)
+                                }
+                                BookingStatus.CANCELLED -> {
+                                    val notif = AppNotification(
+                                        id = UUID.randomUUID().toString(),
+                                        title = "Booking Cancelled",
+                                        message = "Booking #${remote.id.takeLast(6)} has been cancelled.",
+                                        bookingId = remote.id
+                                    )
+                                    _notifications.value = listOf(notif) + _notifications.value
+                                    saveNotifications(_notifications.value)
+                                }
+                                else -> {}
+                            }
+                        }
+                    }
+
+                    // Merge remote updates with local bookings
+                    val updatedList = currentList.map { local ->
+                        remoteMap[local.id] ?: local
+                    }
+                    val currentUserId = _currentUser.value?.id ?: ""
+                    val currentIds = updatedList.map { it.id }.toSet()
+                    val newCustomerBookings = remoteBookings.filter {
+                        (currentUserId.isNotBlank() && it.customerId == currentUserId) && it.id !in currentIds
+                    }
+                    val finalList = newCustomerBookings + updatedList
+                    _bookings.value = finalList
+                    prefs.edit().putString(KEY_CUSTOM_BOOKINGS, gson.toJson(finalList)).apply()
+                }
+            }
+
+            providersListener?.remove()
+            providersListener = firebaseSyncService.listenToProviders { remoteProviders ->
+                if (remoteProviders.isNotEmpty()) {
+                    val remoteMap = remoteProviders.associateBy { it.id }
+                    val localList = _providers.value
+                    val localIds = localList.map { it.id }.toSet()
+                    val updated = localList.map { remoteMap[it.id] ?: it }
+                    val newProviders = remoteProviders.filter { it.id !in localIds }
+                    val merged = updated + newProviders
+                    _providers.value = merged
+                    prefs.edit().putString(KEY_CUSTOM_PROVIDERS, gson.toJson(merged)).apply()
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ServiceSyncRepository", "Failed to start Firestore realtime listeners", e)
         }
     }
 
@@ -157,7 +255,7 @@ class ServiceSyncRepository(private val context: Context) {
                 AppNotification(
                     id = UUID.randomUUID().toString(),
                     title = "Welcome to SaServe! 👋",
-                    message = "Tap '+ Add Specialist' to add electricians, plumbers, carpenters, or mechanics to your service catalog.",
+                    message = "Book verified local electricians, plumbers, cleaners, and mechanics with verified OTP security.",
                     timestamp = System.currentTimeMillis(),
                     isRead = false
                 )
@@ -925,11 +1023,7 @@ class ServiceSyncRepository(private val context: Context) {
         _notifications.value = listOf(newNotif) + _notifications.value
         saveNotifications(_notifications.value)
 
-        // Real-time acceptance delay (Ola/Uber ride match simulation)
-        kotlinx.coroutines.delay(2600)
-        acceptBooking(booking.id)
-
-        return _bookings.value.firstOrNull { it.id == booking.id } ?: booking.copy(status = BookingStatus.ACCEPTED)
+        return booking
     }
 
     /**
