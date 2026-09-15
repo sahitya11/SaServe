@@ -84,9 +84,9 @@ fun MainAppHost(initialNavTarget: String?, repository: ServiceSyncRepository) {
 
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Splash) }
 
-    // 1-Second Fullscreen SaServe Splash Screen Transition
+    // Fullscreen SaServe Loading Logo Screen Transition
     LaunchedEffect(Unit) {
-        delay(1000)
+        delay(1400)
         currentScreen = if (!repository.isUserLoggedIn()) {
             Screen.Auth
         } else {
@@ -122,20 +122,23 @@ fun MainAppHost(initialNavTarget: String?, repository: ServiceSyncRepository) {
 
     val unreadNotifs = notifications.count { !it.isRead }
 
-    Scaffold(
-        containerColor = BackgroundLight
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            when (val screen = currentScreen) {
-                is Screen.Splash -> {
-                    SplashScreen()
-                }
+    if (currentScreen is Screen.Splash) {
+        SplashScreen()
+    } else {
+        Scaffold(
+            containerColor = BackgroundLight
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                when (val screen = currentScreen) {
+                    is Screen.Splash -> {
+                        // Handled above
+                    }
 
-                is Screen.Auth -> {
+                    is Screen.Auth -> {
                     AuthScreen(
                         repository = repository,
                         onAuthSuccess = {
@@ -303,6 +306,7 @@ fun MainAppHost(initialNavTarget: String?, repository: ServiceSyncRepository) {
                 }
             }
         }
+    }
     }
 }
 
